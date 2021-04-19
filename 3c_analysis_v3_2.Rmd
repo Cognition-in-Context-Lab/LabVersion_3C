@@ -15,6 +15,7 @@ library(tidyverse)
 #library(plyr)
 ```
 
+
 ## Load and Cleanup Data
 ```{r}
 #df <- read.csv("C:/Users/14083/Desktop/3C_Live_Study_NA_Data.csv")
@@ -28,18 +29,18 @@ unneeded_cols <- c("StartDate", "EndDate", "Status", "IPAddress", "Progress", "F
 df$'Duration..in.seconds.' = as.numeric(as.character(df$'Duration..in.seconds.'))
 df[which(df$'Duration..in.seconds.' >= 45*60), ]
 
-#return entries where duration was shorter than 6 mins.
+# return entries where duration was shorter than 6 mins.
 df$'Duration..in.seconds.' = as.numeric(as.character(df$'Duration..in.seconds.'))
 df[which(df$'Duration..in.seconds.' <= 360), ]
 
-#remove Gender and Race open response columns to be able to remove rows with missing values
+# remove Gender and Race open response columns to be able to remove rows with missing values
 NAcols <- c("Gender_4_TEXT", "Race_6_TEXT")
 
 df <- df[-c(1:7,8:12,22,205,222,255,324,415:444), ]
 df <- df[ , !names(df) %in% unneeded_cols]
 df <- df[ , !names(df) %in% NAcols]
 
-##converting factors classes into numeric classes
+#convert factors classes into numeric classes
 #Education
 df$Education <- as.numeric(as.character(df$Education))
 mean(df$Education, na.rm = TRUE)
@@ -48,7 +49,10 @@ df$Gender <- as.numeric(as.character(df$Gender))
 summary(df$Gender)
 ```
 
-## Add columns with time frames in days
+## Creating COVID19 DoG Index 
+
+#Add columns with time frames in days
+
 ```{r}
 dog1 <- list("COVID_DoG_Questions.1", df$COVID_DoG_Questions.2_1, df$COVID_DoG_Questions.1_1)
 dog2 <- list("COVID_DoG_Questions.2", df$COVID_DoG_Questions.2_2, df$COVID_DoG_Questions.1_2)
@@ -110,7 +114,7 @@ omit_df$attentioncheck_1 #all 4s
 omit_df$attentioncheck_2 #all 3s
 ```
 
-## Demographics
+## Demographics Analyses
 ```{r}
 #duration, demographics
 mean(df$Duration..in.seconds., na.rm = TRUE)
@@ -127,7 +131,32 @@ table(df$Race)
 table(df$Education)
 ```
 
-## Measures
+
+# Summary statistics
+```{r}
+summary(omit_df$PandemicLengthExpect.1)
+describe(omit_df$COVID_DoG_Sum)
+describe(omit_df$MCQ_Sum)
+describe(omit_df$Norms_Sum)
+describe(omit_df$GCS_Sum)
+describe(omit_df$IUS_Sum)
+describe(omit_df$MFQ_part1_sum)
+describe(omit_df$MFQ_part2_sum)
+describe(omit_df$Disgust_Sum)
+describe(omit_df$Perceived_Value_Sum)
+describe(omit_df$SDRS_Sum)
+describe(omit_df$Impacts_sum)
+describe(omit_df$Experiences_sum)
+describe(omit_df$Stress_Sum)
+describe(omit_df$MFQ_total_sum)
+describe(omit_df$Measure2_PO_Sum)
+describe(omit_df$Measure5_PO_Sum)
+describe(omit_df$PO_Total_Sum)
+describe(omit_df$Percevied_Risk_Sum) #confused about the sum?? probably just need to restart from beginning so that excel is normal (we dont want omit_df to have Sum column!)
+```
+
+
+## Task Analyses
 # Perceived Risk and Value
 ```{r}
 mini_df <- omit_df %>% select(PerceivedRisk_1:PerceivedRisk_6)
@@ -170,7 +199,7 @@ mini_df <- omit_df %>% select(IUS_1:IUS_12)
 omit_df <- omit_df %>% mutate(IUS_Sum = rowSums(mini_df), .before = MFQpart1_1)
 ```
 
-#Political Orientation
+# Political Orientation
 ```{r}
 # measure 2
 mini_df <- omit_df %>% select(Measure2_2:Measure2_4)
@@ -182,10 +211,9 @@ omit_df <- omit_df %>% mutate(Measure5_PO_Sum = rowSums(mini_df))
 mini_df <- omit_df %>% select(contains("PO_Sum"))
 #mini_df
 omit_df <- omit_df %>% mutate(PO_Total_Sum = rowSums(mini_df))
-
 ```
 
-#MFQ
+# MFQ
 ```{r}
 MFQ_part1 <- omit_df %>% select(MFQpart1_1:MFQpart1_16)
 MFQ_part2 <- omit_df %>% select(MFQ_part2_1:MFQ_part2_16)
@@ -196,14 +224,14 @@ MFQ_total <- omit_df %>% select(contains("MFQ_sum"))
 omit_df <- omit_df %>% mutate(MFQ_total_sum = rowSums(MFQ_total), .before = Disgust_1)
 ```
 
-#COVID Stress
+# COVID Stress
 ```{r}
 mini_df <- omit_df %>% select(contains("Worries") | contains("Problems") | contains("Checking"))
 mini_df
 omit_df <- omit_df %>% mutate(Stress_Sum = rowSums(mini_df), .before = Impacts_financial1)
 ```
 
-#COVID Impacts and Experiences
+# COVID Impacts and Experiences
 ```{r}
 Impacts <- omit_df %>% select(Impacts_financial1:Impacts_psychology3)
 Experiences <- omit_df %>% select(contains("PersonalDiagnoses") | contains("Proximity") | contains("News"))
@@ -212,38 +240,15 @@ omit_df <- omit_df %>% mutate(Impacts_sum = rowSums(Impacts), .before = Personal
 omit_df <- omit_df %>% mutate(Experiences_sum = rowSums(Experiences), .before = Age)
 ```
 
-#Disgust
+# Disgust
 ```{r}
 mini_df <- omit_df %>% select(Disgust_1:Disgust_21)
 omit_df <- omit_df %>% mutate(Disgust_Sum = rowSums(mini_df), .before = SDRS.5_Q1)
 ```
 
-#Social Desirability
+# Social Desirability
 ```{r}
 mini_df <- omit_df %>% select(SDRS.5_Q1:SDRS.5_Q5)
 omit_df <- omit_df %>% mutate(SDRS_Sum = rowSums(mini_df), .before = Worries_1)
 view(omit_df)
-```
-
-# Summary statistics
-```{r}
-summary(omit_df$PandemicLengthExpect.1)
-describe(omit_df$COVID_DoG_Sum)
-describe(omit_df$MCQ_Sum)
-describe(omit_df$Norms_Sum)
-describe(omit_df$GCS_Sum)
-describe(omit_df$IUS_Sum)
-describe(omit_df$MFQ_part1_sum)
-describe(omit_df$MFQ_part2_sum)
-describe(omit_df$Disgust_Sum)
-describe(omit_df$Perceived_Value_Sum)
-describe(omit_df$SDRS_Sum)
-describe(omit_df$Impacts_sum)
-describe(omit_df$Experiences_sum)
-describe(omit_df$Stress_Sum)
-describe(omit_df$MFQ_total_sum)
-describe(omit_df$Measure2_PO_Sum)
-describe(omit_df$Measure5_PO_Sum)
-describe(omit_df$PO_Total_Sum)
-describe(omit_df$Percevied_Risk_Sum) #confused about the sum?? probably just need to restart from beginning so that excel is normal (we dont want omit_df to have Sum column!)
 ```
