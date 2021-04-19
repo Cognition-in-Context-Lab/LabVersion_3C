@@ -41,6 +41,9 @@ df <- df[ , !names(df) %in% unneeded_cols]
 df <- df[ , !names(df) %in% NAcols]
 
 #convert factors classes into numeric classes
+
+### should this be calcualted using the omit_df and not df? We should move this to the other class transformations regardless. 
+
 #Education
 df$Education <- as.numeric(as.character(df$Education))
 mean(df$Education, na.rm = TRUE)
@@ -50,6 +53,8 @@ summary(df$Gender)
 ```
 
 ## Creating COVID19 DoG Index 
+
+### should we calculate this after we create the omit_df dataframe? 
 
 #Add columns with time frames in days
 
