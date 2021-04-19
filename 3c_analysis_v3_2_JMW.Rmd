@@ -38,6 +38,14 @@ NAcols <- c("Gender_4_TEXT", "Race_6_TEXT")
 df <- df[-c(1:7,8:12,22,205,222,255,324,415:444), ]
 df <- df[ , !names(df) %in% unneeded_cols]
 df <- df[ , !names(df) %in% NAcols]
+
+##converting factors classes into numeric classes
+#Education
+df$Education <- as.numeric(as.character(df$Education))
+mean(df$Education, na.rm = TRUE)
+#Gender
+df$Gender <- as.numeric(as.character(df$Gender))
+summary(df$Gender)
 ```
 
 ## Add columns with time frames in days
