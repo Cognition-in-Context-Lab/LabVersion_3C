@@ -120,33 +120,7 @@ table(omit_df$Race)
 table(omit_df$Education)
 ```
 
-
-# Summary statistics
-```{r}
-summary(omit_df$PandemicLengthExpect.1)
-describe(omit_df$COVID_DoG_Sum)
-describe(omit_df$MCQ_Sum)
-describe(omit_df$Norms_Sum)
-describe(omit_df$GCS_Sum)
-describe(omit_df$IUS_Sum)
-describe(omit_df$MFQ_sum_part1)
-describe(omit_df$MFQ_sum_part2)
-describe(omit_df$MFQ_total_sum)
-describe(omit_df$Disgust_Sum)
-describe(omit_df$Perceived_Value_Sum)
-describe(omit_df$SDRS_Sum)
-describe(omit_df$Impacts_sum)
-describe(omit_df$Experiences_sum)
-describe(omit_df$Stress_Sum)
-describe(omit_df$MFQ_total_sum)
-describe(omit_df$Measure2_PO_Sum)
-describe(omit_df$Measure5_PO_Sum)
-describe(omit_df$PO_Total_Sum)
-describe(omit_df$Perceived_Risk_Sum)
-```
-
-
-## Task Analyses
+## Add summary columns to calculate descriptive statistics
 # Perceived Risk and Value
 ```{r}
 mini_df <- omit_df %>% select(PerceivedRisk_1:PerceivedRisk_6)
@@ -244,4 +218,41 @@ omit_df <- omit_df %>% mutate(Disgust_Sum = rowSums(mini_df), .before = SDRS.5_Q
 mini_df <- omit_df %>% select(SDRS.5_Q1:SDRS.5_Q5)
 omit_df <- omit_df %>% mutate(SDRS_Sum = rowSums(mini_df), .before = Worries_1)
 #view(omit_df)
+```
+
+# Summary statistics
+```{r}
+summary(omit_df$PandemicLengthExpect.1)
+describe(omit_df$COVID_DoG_Sum)
+describe(omit_df$MCQ_Sum)
+describe(omit_df$Norms_Sum)
+describe(omit_df$GCS_Sum)
+describe(omit_df$IUS_Sum)
+describe(omit_df$MFQ_sum_part1)
+describe(omit_df$MFQ_sum_part2)
+describe(omit_df$MFQ_total_sum)
+describe(omit_df$Disgust_Sum)
+describe(omit_df$Perceived_Value_Sum)
+describe(omit_df$SDRS_Sum)
+describe(omit_df$Impacts_sum)
+describe(omit_df$Experiences_sum)
+describe(omit_df$Stress_Sum)
+describe(omit_df$MFQ_total_sum)
+describe(omit_df$Measure2_PO_Sum)
+describe(omit_df$Measure5_PO_Sum)
+describe(omit_df$PO_Total_Sum)
+describe(omit_df$Perceived_Risk_Sum)
+```
+
+
+## Task Analyses
+# COVID DoG and Perceived Risk/Value
+```{r}
+```
+
+# COVID DoG and General Uncertainty
+```{r}
+# normality assumption
+shapiro.test(omit_df$GCS_Sum)
+
 ```
