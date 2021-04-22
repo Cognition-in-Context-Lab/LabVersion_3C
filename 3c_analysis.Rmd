@@ -11,6 +11,8 @@ knitr::opts_chunk$set(echo = TRUE)
 # Packages
 library(psych)
 library(tidyverse)
+install.packages(ggplot2)
+library(ggplot2)
 #library(dplyr)
 #library(plyr)
 ```
@@ -244,6 +246,47 @@ describe(omit_df$PO_Total_Sum)
 describe(omit_df$Perceived_Risk_Sum)
 ```
 
+# Graphs
+```{r}
+##Demographics
+#Age
+hist(omit_df$Age, breaks = 2)
+omit_df$Age
+AgeSubset <- omit_df[ which(omit_df$Age < 1000), ]
+AgeSubset
+hist(AgeSubset$Age)
+
+#Education -- levels not working :(
+ggplot(omit_df) +
+  geom_bar(aes(x = Education), levels = c("Without high school diploma","High school graduate, no college","High school graduate, some college","Degree from 4 year college","Graduate/professional degree")) +
+  ggtitle("Count of Education") +
+  theme(plot.title = element_text(hjust = 0.5))
+#Race
+ggplot(omit_df) +
+  geom_bar(aes(x = Race)) +
+  ggtitle("Count of Race") +
+  theme(plot.title = element_text(hjust = 0.5))
+#Gender
+ggplot(omit_df) +
+  geom_bar(aes(x = Gender)) +
+  ggtitle("Count of Gender") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+#Relations
+ggplot(data = omit_df) + 
+  geom_point(mapping = aes(x = COVID_DoG_Sum, y = Perceived_Risk_Sum))
+
+
+ggplot(omit_df) +
+  geom_bar(aes(x = Education, levels = c("Without high school diploma","High school graduate, no college","High school graduate, some college","Degree from 4 year college","Graduate/professional degree")))
+
+l <- c("Without high school diploma","High school graduate, no college","High school graduate, some college","Degree from 4 year college","Graduate/professional degree")
+
+ggplot(omit_df) +
+  geom_bar(aes(x = Education)) +
+  scale_x_continuous(labels = l) +
+  scale_y_continuous(labels = NULL)
+```
 
 ## Task Analyses
 # COVID DoG and Perceived Risk/Value
