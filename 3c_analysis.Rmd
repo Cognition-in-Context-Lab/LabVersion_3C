@@ -11,7 +11,6 @@ knitr::opts_chunk$set(echo = TRUE)
 # Packages
 library(psych)
 library(tidyverse)
-install.packages(ggplot2)
 library(ggplot2)
 #library(dplyr)
 #library(plyr)
@@ -44,18 +43,25 @@ df <- df[ , !names(df) %in% NAcols]
 ```
 
 ## Creating COVID19 DoG Index 
-
+# Andrew/Kate decided placement should be above removing NAs, not working in reverse order
 #Add columns with time frames in days
 
 ```{r}
+# saving both response in set of units (days-years), (.2_x) AND numbers (0-30), (.1_x)
 dog1 <- list("COVID_DoG_Questions.1", df$COVID_DoG_Questions.2_1, df$COVID_DoG_Questions.1_1)
+dog1
 dog2 <- list("COVID_DoG_Questions.2", df$COVID_DoG_Questions.2_2, df$COVID_DoG_Questions.1_2)
 dog3 <- list("COVID_DoG_Questions.3", df$COVID_DoG_Questions.2_3, df$COVID_DoG_Questions.1_3)
 dog4 <- list("COVID_DoG_Questions.4", df$COVID_DoG_Questions.2_4, df$COVID_DoG_Questions.1_4)
 dog5 <- list("COVID_DoG_Questions.5", df$COVID_DoG_Questions.2_5, df$COVID_DoG_Questions.1_5)
 dog6 <- list("COVID_DoG_Questions.6", df$COVID_DoG_Questions.2_6, df$COVID_DoG_Questions.1_6)
+
+# saving both response in set of units (days-years), (.1_x) AND numbers (0-30), (.2_x)
 pandemic_len <- list("PandemicLengthExpect.1", df$PandemicLengthExpect.1_1, df$PandemicLengthExpect.2_1)
 
+## create function called create_columns that takes in UNITS and NUMBERS
+# depending on units, multiplies NUMBERS by correct converstion to have units ALL in days
+# e.g. 2 = weeks, so NUMBER (len_col) x 7 = days 
 create_columns <- function(units_col, len_col) {
   case_when(as.numeric(substring(units_col, 1, 1)) == 1 ~ as.numeric(substring(len_col, 1, 1)) * 1,
             as.numeric(substring(units_col, 1, 1)) == 2 ~ as.numeric(substring(len_col, 1, 1)) * 7,
@@ -63,6 +69,8 @@ create_columns <- function(units_col, len_col) {
             as.numeric(substring(units_col, 1, 1)) == 4 ~ as.numeric(substring(len_col, 1, 1)) * 365)
 }
 
+# loop through 6 categories saved above and apply function
+# unsure what the [2] and [3] are
 df <- df %>% mutate(!!dog1[[1]] := create_columns(dog1[[2]], dog1[[3]]),
               !!dog2[[1]] := create_columns(dog2[[2]], dog2[[3]]),
               !!dog3[[1]] := create_columns(dog3[[2]], dog3[[3]]),
@@ -107,6 +115,13 @@ sapply(omit_df, class) # all numeric!
 #check that everyone included in omit_df passed both attention checks
 omit_df$attentioncheck_1 #all 4s
 omit_df$attentioncheck_2 #all 3s
+
+# recode value in Age variable that participant entered their birth year (1971) instead of their age
+which(omit_df == 1971, arr.ind=TRUE)
+# row = 232, col = 202
+omit_df[232,202] <- 2021-1971
+omit_df[232,202]
+
 ```
 
 ## Demographics Analyses
@@ -123,6 +138,8 @@ table(omit_df$Education)
 ```
 
 ## Add summary columns to calculate descriptive statistics
+# Placed before Summary statistics because summary columns required for calculations
+
 # Perceived Risk and Value
 ```{r}
 mini_df <- omit_df %>% select(PerceivedRisk_1:PerceivedRisk_6)
@@ -138,6 +155,11 @@ view(omit_df)
 ```{r}
 mini_df <- omit_df %>% select(COVID_DoG_Questions.1:COVID_DoG_Questions.6)
 omit_df <- omit_df %>% mutate(COVID_DoG_Sum = rowSums(mini_df), .before = PandemicLengthExpect.1)
+summary(omit_df$COVID_DoG_Sum)
+
+# make index of delaying (average delaying across categories)
+omit_df <- omit_df %>% mutate(COVID_DoG_index = rowMeans(mini_df), .before = PandemicLengthExpect.1)
+#view(omit_df)
 ```
 
 # MCQ
@@ -250,42 +272,38 @@ describe(omit_df$Perceived_Risk_Sum)
 ```{r}
 ##Demographics
 #Age
-hist(omit_df$Age, breaks = 2)
-omit_df$Age
-AgeSubset <- omit_df[ which(omit_df$Age < 1000), ]
-AgeSubset
-hist(AgeSubset$Age)
+hist(omit_df$Age)
 
-#Education -- levels not working :(
-ggplot(omit_df) +
-  geom_bar(aes(x = Education), levels = c("Without high school diploma","High school graduate, no college","High school graduate, some college","Degree from 4 year college","Graduate/professional degree")) +
-  ggtitle("Count of Education") +
-  theme(plot.title = element_text(hjust = 0.5))
-#Race
-ggplot(omit_df) +
-  geom_bar(aes(x = Race)) +
-  ggtitle("Count of Race") +
-  theme(plot.title = element_text(hjust = 0.5))
 #Gender
+# 1) create new variable with gender recoded as a factor
+omit_df$GenderasFactor <- factor(omit_df$Gender, levels=1:8, labels=c("male", "female", "non-binary", "other", "prefer not to answer", "trans man", "trans woman", "genderqueer"))
+# 2) create barplot with new Gender variable
 ggplot(omit_df) +
-  geom_bar(aes(x = Gender)) +
+  geom_bar(aes(x = GenderasFactor)) +
   ggtitle("Count of Gender") +
   theme(plot.title = element_text(hjust = 0.5))
+
+#Education
+omit_df$EducationasFactor <- factor(omit_df$Education, levels=1:6, labels=c("Unknown","No hs diploma","No college","Some college","4 yr college","Graduate degree"))
+ggplot(omit_df) +
+  geom_bar(aes(x = EducationasFactor)) +
+  ggtitle("Count of Education") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+#Race
+omit_df$RaceasFactor <- factor(omit_df$Race, levels=1:7, labels=c("Am Indian","Asian","Pacific Islander","Black","White","Multiple","Unknown"))
+ggplot(omit_df) +
+  geom_bar(aes(x = RaceasFactor)) +
+  ggtitle("Count of Race") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+# Plot for COVID DoG index (average delaying across 6 scenarios for each participant)
+hist(omit_df$COVID_DoG_index)
 
 #Relations
 ggplot(data = omit_df) + 
   geom_point(mapping = aes(x = COVID_DoG_Sum, y = Perceived_Risk_Sum))
 
-
-ggplot(omit_df) +
-  geom_bar(aes(x = Education, levels = c("Without high school diploma","High school graduate, no college","High school graduate, some college","Degree from 4 year college","Graduate/professional degree")))
-
-l <- c("Without high school diploma","High school graduate, no college","High school graduate, some college","Degree from 4 year college","Graduate/professional degree")
-
-ggplot(omit_df) +
-  geom_bar(aes(x = Education)) +
-  scale_x_continuous(labels = l) +
-  scale_y_continuous(labels = NULL)
 ```
 
 ## Task Analyses
