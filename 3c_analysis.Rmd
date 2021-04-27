@@ -49,7 +49,6 @@ df <- df[ , !names(df) %in% NAcols]
 ```{r}
 # saving both response in set of units (days-years), (.2_x) AND numbers (0-30), (.1_x)
 dog1 <- list("COVID_DoG_Questions.1", df$COVID_DoG_Questions.2_1, df$COVID_DoG_Questions.1_1)
-dog1
 dog2 <- list("COVID_DoG_Questions.2", df$COVID_DoG_Questions.2_2, df$COVID_DoG_Questions.1_2)
 dog3 <- list("COVID_DoG_Questions.3", df$COVID_DoG_Questions.2_3, df$COVID_DoG_Questions.1_3)
 dog4 <- list("COVID_DoG_Questions.4", df$COVID_DoG_Questions.2_4, df$COVID_DoG_Questions.1_4)
@@ -62,15 +61,24 @@ pandemic_len <- list("PandemicLengthExpect.1", df$PandemicLengthExpect.1_1, df$P
 ## create function called create_columns that takes in UNITS and NUMBERS
 # depending on units, multiplies NUMBERS by correct converstion to have units ALL in days
 # e.g. 2 = weeks, so NUMBER (len_col) x 7 = days 
+# fixed from (units_col, 1, 1) to (units_col, 1, 2) because NUMBERS that were more than 1 digit (e.g. 11, 13) were being cut off 
+# so 11 months was being converted to 30 days not 330 days
 create_columns <- function(units_col, len_col) {
-  case_when(as.numeric(substring(units_col, 1, 1)) == 1 ~ as.numeric(substring(len_col, 1, 1)) * 1,
-            as.numeric(substring(units_col, 1, 1)) == 2 ~ as.numeric(substring(len_col, 1, 1)) * 7,
-            as.numeric(substring(units_col, 1, 1)) == 3 ~ as.numeric(substring(len_col, 1, 1)) * 30,
-            as.numeric(substring(units_col, 1, 1)) == 4 ~ as.numeric(substring(len_col, 1, 1)) * 365)
+  case_when(as.numeric(substring(units_col, 1, 2)) == 1 ~ as.numeric(substring(len_col, 1, 2)) * 1,
+            as.numeric(substring(units_col, 1, 2)) == 2 ~ as.numeric(substring(len_col, 1, 2)) * 7,
+            as.numeric(substring(units_col, 1, 2)) == 3 ~ as.numeric(substring(len_col, 1, 2)) * 30,
+            as.numeric(substring(units_col, 1, 2)) == 4 ~ as.numeric(substring(len_col, 1, 2)) * 365)
 }
 
+##work to debug create_columsn function
+#test each of the functions in create_columns
+#units_col = 12
+#units <- substring(units_col, 1, 1)
+#units
+#prints out 1 when should print out 12
+# function not taking the entire number (13)
+
 # loop through 6 categories saved above and apply function
-# unsure what the [2] and [3] are
 df <- df %>% mutate(!!dog1[[1]] := create_columns(dog1[[2]], dog1[[3]]),
               !!dog2[[1]] := create_columns(dog2[[2]], dog2[[3]]),
               !!dog3[[1]] := create_columns(dog3[[2]], dog3[[3]]),
@@ -80,6 +88,11 @@ df <- df %>% mutate(!!dog1[[1]] := create_columns(dog1[[2]], dog1[[3]]),
               !!pandemic_len[[1]] := create_columns(pandemic_len[[2]], pandemic_len[[3]]),
               .before = SocialNorms_Family_1
               )
+
+#checks: are lengths the same?
+#length(pandemic_len[[2]])
+#length(pandemic_len[[3]])
+#df %>% select(PandemicLengthExpect.1_1, PandemicLengthExpect.2_1, PandemicLengthExpect.1)
 
 #view(df)
 ```
