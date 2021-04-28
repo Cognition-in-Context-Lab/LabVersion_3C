@@ -322,6 +322,15 @@ ggplot(data = omit_df) +
 ## Task Analyses
 # COVID DoG and Perceived Risk/Value
 ```{r}
+#create index across all 6 conditions
+#create 1 index across social situations/gatherings and 1 index across traveling
+#are there data driven differences between the two? E.g. days in one versus months in other
+#perform EFA to see if there are two separate factors for DoG that pertain to travel and social situations/gatherings that influence how participants respond? This would answer the question to whatever or not we should keep the things separate or together
+#index: Expectation of Pandemic; May help us evaluate how folks expectations relate to their DoG index + that relationship may be meaningful across other analyses
+#perform tests 3 times:
+#1) DoG Index by itself
+#2) Index:Expextation of Pandemic
+#3) Both indices
 ```
 
 # COVID DoG and General Uncertainty
