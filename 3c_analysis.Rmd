@@ -70,7 +70,7 @@ create_columns <- function(units_col, len_col) {
             as.numeric(substring(units_col, 1, 2)) == 4 ~ as.numeric(substring(len_col, 1, 2)) * 365)
 }
 
-##work to debug create_columsn function
+##work to debug create_columns function
 #test each of the functions in create_columns
 #units_col = 12
 #units <- substring(units_col, 1, 1)
@@ -100,7 +100,7 @@ df <- df %>% mutate(!!dog1[[1]] := create_columns(dog1[[2]], dog1[[3]]),
 ## Remove missing values and convert classes
 ```{r}
 #check where the missing values are
-rowSums(is.na(df))
+#rowSums(is.na(df))
 
 #remove missing values
 ##show where missing values are
@@ -169,9 +169,16 @@ view(omit_df)
 mini_df <- omit_df %>% select(COVID_DoG_Questions.1:COVID_DoG_Questions.6)
 omit_df <- omit_df %>% mutate(COVID_DoG_Sum = rowSums(mini_df), .before = PandemicLengthExpect.1)
 summary(omit_df$COVID_DoG_Sum)
-
-# make index of delaying (average delaying across categories)
+# make index of delaying across all 6 categories (average delaying across categories)
 omit_df <- omit_df %>% mutate(COVID_DoG_index = rowMeans(mini_df), .before = PandemicLengthExpect.1)
+#create 1 index across social situations/gatherings and 1 index across traveling
+view(omit_df)
+mini_df <- omit_df %>% select(COVID_DoG_Questions.1:COVID_DoG_Questions.3)
+omit_df <- omit_df %>% mutate(socialgatherings_index = rowMeans(mini_df), .before = PandemicLengthExpect.1)
+mini_df <- omit_df %>% select(COVID_DoG_Questions.4:COVID_DoG_Questions.6)
+omit_df <- omit_df %>% mutate(traveling_index = rowMeans(mini_df), .before = PandemicLengthExpect.1)
+
+
 #view(omit_df)
 ```
 
@@ -313,23 +320,36 @@ ggplot(omit_df) +
 # Plot for COVID DoG index (average delaying across 6 scenarios for each participant)
 hist(omit_df$COVID_DoG_index)
 
-#Relations
-ggplot(data = omit_df) + 
-  geom_point(mapping = aes(x = COVID_DoG_Sum, y = Perceived_Risk_Sum))
+# Relations between variables
+#ggplot(data = omit_df) + 
+  #geom_point(mapping = aes(x = COVID_DoG_Sum, y = Perceived_Risk_Sum))
 
 ```
 
 ## Task Analyses
 # COVID DoG and Perceived Risk/Value
 ```{r}
-#create index across all 6 conditions
-#create 1 index across social situations/gatherings and 1 index across traveling
-#are there data driven differences between the two? E.g. days in one versus months in other
+hist(omit_df$socialgatherings_index)
+summary(omit_df$socialgatherings_index)
+hist(omit_df$traveling_index)
+summary(omit_df$traveling_index)
+#HOW DO I PUT GRAPHS ON SAME THINGY??
+#are there data driven differences between the two indices (social gatherings and traveling)? E.g. days in one versus months in otherl
+socialgatherings_length <- omit_df %>% select(COVID_DoG_Questions.2_1:COVID_DoG_Questions.2_3)
+summary(rowMeans(socialgatherings_length))
+
+traveling_length <- omit_df %>% select(COVID_DoG_Questions.2_4:COVID_DoG_Questions.2_6)
+summary(rowMeans(traveling_length))
+#doesn't look like there's differences between them, should we run a test? both have similar means? (2.608 v. 3.094) - rounds to 3! average length response was in months
+
 #perform EFA to see if there are two separate factors for DoG that pertain to travel and social situations/gatherings that influence how participants respond? This would answer the question to whatever or not we should keep the things separate or together
+#EFA steps:
+
+
 #index: Expectation of Pandemic; May help us evaluate how folks expectations relate to their DoG index + that relationship may be meaningful across other analyses
-#perform tests 3 times:
+#perform tests with other variables (e.g. general uncertainty) 3 times:
 #1) DoG Index by itself
-#2) Index:Expextation of Pandemic
+#2) Index:Expectation of Pandemic
 #3) Both indices
 ```
 
