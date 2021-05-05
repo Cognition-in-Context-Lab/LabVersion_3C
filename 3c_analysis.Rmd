@@ -70,13 +70,14 @@ create_columns <- function(units_col, len_col) {
             as.numeric(substring(units_col, 1, 2)) == 4 ~ as.numeric(substring(len_col, 1, 2)) * 365)
 }
 
-##work to debug create_columns function
-#test each of the functions in create_columns
+## work to debug create_columns function
+# test each of the functions in create_columns
 #units_col = 12
 #units <- substring(units_col, 1, 1)
 #units
-#prints out 1 when should print out 12
+# prints out 1 when should print out 12
 # function not taking the entire number (13)
+#solution: change as.numeric(substring((units_col, 1, 1)) to (units_col, 1, 2)))
 
 # loop through 6 categories saved above and apply function
 df <- df %>% mutate(!!dog1[[1]] := create_columns(dog1[[2]], dog1[[3]]),
@@ -333,19 +334,23 @@ hist(omit_df$socialgatherings_index)
 summary(omit_df$socialgatherings_index)
 hist(omit_df$traveling_index)
 summary(omit_df$traveling_index)
-#HOW DO I PUT GRAPHS ON SAME THINGY??
-#are there data driven differences between the two indices (social gatherings and traveling)? E.g. days in one versus months in otherl
+
+#Question: are there data driven differences between the two indices (social gatherings and traveling)? E.g. days in one versus months in other
 socialgatherings_length <- omit_df %>% select(COVID_DoG_Questions.2_1:COVID_DoG_Questions.2_3)
 summary(rowMeans(socialgatherings_length))
-
 traveling_length <- omit_df %>% select(COVID_DoG_Questions.2_4:COVID_DoG_Questions.2_6)
 summary(rowMeans(traveling_length))
-#doesn't look like there's differences between them, should we run a test? both have similar means? (2.608 v. 3.094) - rounds to 3! average length response was in months
+#Answer: it doesn't look like there's differences between them, both have similar means? (2.608 v. 3.094) - rounds to 3, thus the average length response for both indices was in months
 
 #perform EFA to see if there are two separate factors for DoG that pertain to travel and social situations/gatherings that influence how participants respond? This would answer the question to whatever or not we should keep the things separate or together
 #EFA steps:
+##basic factor analysis model: y = (lambda)(f) + (u) 
+#y = individual's score on observed variable
+#lambda = factor loading indicating relation between observed variable and latent common factor
+#f = individual's score on latent common factor
+#u = individual's score on latent unique factor
 
-
+# Future plans:
 #index: Expectation of Pandemic; May help us evaluate how folks expectations relate to their DoG index + that relationship may be meaningful across other analyses
 #perform tests with other variables (e.g. general uncertainty) 3 times:
 #1) DoG Index by itself
