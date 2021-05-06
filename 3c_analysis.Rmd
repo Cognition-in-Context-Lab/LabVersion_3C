@@ -212,7 +212,6 @@ omit_df <- omit_df %>% mutate(Norms_Sum = rowSums(mini_df), .before = PerceivedR
 mini_df <- omit_df %>% select(contains("GCS"))
 #mini_df
 omit_df <- omit_df %>% mutate(GCS_Sum = rowSums(mini_df), .before = IUS_1)
-omit_df$GCS_Sum
 #view(omit_df)
 ```
 
@@ -242,7 +241,7 @@ MFQ_part1 <- omit_df %>% select(MFQpart1_1:MFQpart1_16)
 MFQ_part2 <- omit_df %>% select(MFQ_part2_1:MFQ_part2_16)
 omit_df <- omit_df %>% mutate(MFQ_sum_part1 = rowSums(MFQ_part1), .before = MFQ_part2_1)
 omit_df <- omit_df %>% mutate(MFQ_sum_part2 = rowSums(MFQ_part2), .before = Disgust_1)
-view(omit_df)
+#view(omit_df)
 MFQ_total <- omit_df %>% select(contains("MFQ_sum"))
 #MFQ_total
 omit_df <- omit_df %>% mutate(MFQ_total_sum = rowSums(MFQ_total), .before = Disgust_1)
@@ -373,6 +372,6 @@ summary(rowMeans(traveling_units))
 # COVID DoG and General Uncertainty
 ```{r}
 # normality assumption
-shapiro.test(omit_df$GCS_Sum)
+shapiro.test(omit_df$GCS_Sum)  #pvalue = 0.011 (>.05), yes normally distributed
 
 ```
