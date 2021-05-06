@@ -170,12 +170,14 @@ view(omit_df)
 mini_df <- omit_df %>% select(COVID_DoG_Questions.1:COVID_DoG_Questions.6)
 omit_df <- omit_df %>% mutate(COVID_DoG_Sum = rowSums(mini_df), .before = PandemicLengthExpect.1)
 summary(omit_df$COVID_DoG_Sum)
+
 # make index of delaying across all 6 categories (average delaying across categories)
 omit_df <- omit_df %>% mutate(COVID_DoG_index = rowMeans(mini_df), .before = PandemicLengthExpect.1)
-#create 1 index across social situations/gatherings and 1 index across traveling
-view(omit_df)
+
+#create 1 index across social situations/gatherings
 mini_df <- omit_df %>% select(COVID_DoG_Questions.1:COVID_DoG_Questions.3)
 omit_df <- omit_df %>% mutate(socialgatherings_index = rowMeans(mini_df), .before = PandemicLengthExpect.1)
+#create 1 index across traveling
 mini_df <- omit_df %>% select(COVID_DoG_Questions.4:COVID_DoG_Questions.6)
 omit_df <- omit_df %>% mutate(traveling_index = rowMeans(mini_df), .before = PandemicLengthExpect.1)
 
@@ -336,11 +338,12 @@ hist(omit_df$traveling_index)
 summary(omit_df$traveling_index)
 
 #Question: are there data driven differences between the two indices (social gatherings and traveling)? E.g. days in one versus months in other
-socialgatherings_length <- omit_df %>% select(COVID_DoG_Questions.2_1:COVID_DoG_Questions.2_3)
-summary(rowMeans(socialgatherings_length))
-traveling_length <- omit_df %>% select(COVID_DoG_Questions.2_4:COVID_DoG_Questions.2_6)
-summary(rowMeans(traveling_length))
-#Answer: it doesn't look like there's differences between them, both have similar means? (2.608 v. 3.094) - rounds to 3, thus the average length response for both indices was in months
+socialgatherings_units <- omit_df %>% select(COVID_DoG_Questions.2_1:COVID_DoG_Questions.2_3)
+summary(rowMeans(socialgatherings_units))
+traveling_units <- omit_df %>% select(COVID_DoG_Questions.2_4:COVID_DoG_Questions.2_6)
+summary(rowMeans(traveling_units))
+#Answer: it doesn't look like there's differences between the units for two categories, both have similar means? (2.608 v. 3.094) - rounds to 3, thus the average unit response for both indices was months
+#QUESTION: Do we want to use some statistical test to see if there are differences between the indices?
 
 #perform EFA to see if there are two separate factors for DoG that pertain to travel and social situations/gatherings that influence how participants respond? This would answer the question to whatever or not we should keep the things separate or together
 #EFA steps:
@@ -349,6 +352,7 @@ summary(rowMeans(traveling_length))
 #lambda = factor loading indicating relation between observed variable and latent common factor
 #f = individual's score on latent common factor
 #u = individual's score on latent unique factor
+
 
 # Future plans:
 #index: Expectation of Pandemic; May help us evaluate how folks expectations relate to their DoG index + that relationship may be meaningful across other analyses
