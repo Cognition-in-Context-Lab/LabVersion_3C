@@ -19,25 +19,26 @@ library(ggplot2)
 
 ## Load and Cleanup Data
 ```{r}
-#df <- read.csv("C:/Users/14083/Desktop/3C_Live_Study_NA_Data.csv")
 df <- read.csv("C:/Users/14083/Desktop/3C_Live_Study_Data.csv", header=T, na.strings="")
+view(df)
+#df <- read.csv("C:/Users/14083/Desktop/3C_Live_Study_NA_Data.csv")
 #df <- read.csv("3C_Live_Study_NA_Data.csv")
 
-# Drop unneeded rows (pilot data, incomplete trials,remove entries that are shorter than 6 mins longer than 60 minutes) & cols
+## Drop unneeded rows (pilot data, incomplete trials, remove entries that are shorter than 6 mins longer than 60 minutes) & cols
 unneeded_cols <- c("StartDate", "EndDate", "Status", "IPAddress", "Progress", "Finished", "RecordedDate", "ResponseId", "RecipientLastName", "RecipientFirstName", "RecipientEmail", "ExternalReference", "LocationLatitude", "LocationLongitude", "DistributionChannel", "UserLanguage", "Gender_4_TEXT...Parent.Topics", "Gender_4_TEXT...Sentiment.Polarity", "Gender_4_TEXT...Sentiment.Score", "Gender_4_TEXT...Sentiment", "Gender_4_TEXT...Topics", "Gender_4_TEXT...Topic.Sentiment.Label", "Gender_4_TEXT...Topic.Sentiment.Score")
 
 # Return entries where duration was longer than 45 min.
 df$'Duration..in.seconds.' = as.numeric(as.character(df$'Duration..in.seconds.'))
-df[which(df$'Duration..in.seconds.' >= 45*60), ]
+df[which(df$'Duration..in.seconds.' >= 45*60), ]  # 4 entries
 
 # return entries where duration was shorter than 6 mins.
 df$'Duration..in.seconds.' = as.numeric(as.character(df$'Duration..in.seconds.'))
-df[which(df$'Duration..in.seconds.' <= 360), ]
+df[which(df$'Duration..in.seconds.' <= 360), ]   # 29 entries
 
 # remove Gender and Race open response columns to be able to remove rows with missing values
 NAcols <- c("Gender_4_TEXT", "Race_6_TEXT")
 
-df <- df[-c(1:7,8:12,22,205,222,255,324,415:444), ]
+df <- df[-c(1:7,8:12,22,205,222,255,324,415:444), ]  #removed 47 entries
 df <- df[ , !names(df) %in% unneeded_cols]
 df <- df[ , !names(df) %in% NAcols]
 ```
@@ -80,7 +81,8 @@ create_columns <- function(units_col, len_col) {
 #solution: change as.numeric(substring((units_col, 1, 1)) to (units_col, 1, 2)))
 
 # loop through 6 categories saved above and apply function
-df <- df %>% mutate(!!dog1[[1]] := create_columns(dog1[[2]], dog1[[3]]),
+# A NOTE: I added the dplyr function before mutate because when you load in packages that include the mutate function, it overwrites the function in dplyr and the new columns won't show up in the df dataframe, THUS specifiying the mutate function from the dplyr package 
+df <- df %>% dplyr::mutate(!!dog1[[1]] := create_columns(dog1[[2]], dog1[[3]]),
               !!dog2[[1]] := create_columns(dog2[[2]], dog2[[3]]),
               !!dog3[[1]] := create_columns(dog3[[2]], dog3[[3]]),
               !!dog4[[1]] := create_columns(dog4[[2]], dog4[[3]]),
@@ -105,9 +107,10 @@ df <- df %>% mutate(!!dog1[[1]] := create_columns(dog1[[2]], dog1[[3]]),
 
 #remove missing values
 ##show where missing values are
-df[!complete.cases(df), ]
+df[!complete.cases(df), ]   #6 entries
 ##create new dataset with no missing values
 omit_df <- na.omit(df)
+nrow(omit_df) #391
 #view(omit_df)
 sum(is.na(omit_df))
 
@@ -140,6 +143,13 @@ omit_df[232,202]
 
 ## Demographics Analyses
 ```{r}
+## number of included participants
+#study requested 400 participants: 
+#original df dataset had 444 rows, removed 47 rows in Load and Cleanup Data section (unneeded rows, incomplete trials, pilot data, and too short or too long entries) = 397 rows 
+#omit_df dataset had 397 rows, removed 6 entries with missing data 
+nrow(omit_df) # 391 rows
+# thus, we excluded 9 participants (from 400 collected)
+
 #duration, demographics
 mean(df$Duration..in.seconds., na.rm = TRUE)
 mean(omit_df$Duration..in.seconds.)
