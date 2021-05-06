@@ -353,7 +353,6 @@ summary(rowMeans(socialgatherings_units))
 traveling_units <- omit_df %>% select(COVID_DoG_Questions.2_4:COVID_DoG_Questions.2_6)
 summary(rowMeans(traveling_units))
 #Answer: it doesn't look like there's differences between the units for two categories, both have similar means? (2.608 v. 3.094) - rounds to 3, thus the average unit response for both indices was months
-#QUESTION: Do we want to use some statistical test to see if there are differences between the indices?
 
 #perform EFA to see if there are two separate factors for DoG that pertain to travel and social situations/gatherings that influence how participants respond? This would answer the question to whatever or not we should keep the things separate or together
 #EFA steps:
@@ -362,7 +361,6 @@ summary(rowMeans(traveling_units))
 #lambda = factor loading indicating relation between observed variable and latent common factor
 #f = individual's score on latent common factor
 #u = individual's score on latent unique factor
-
 
 # Future plans:
 #index: Expectation of Pandemic; May help us evaluate how folks expectations relate to their DoG index + that relationship may be meaningful across other analyses
