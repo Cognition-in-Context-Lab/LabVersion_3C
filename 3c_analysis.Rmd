@@ -20,7 +20,7 @@ library(ggplot2)
 ## Load and Cleanup Data
 ```{r}
 df <- read.csv("C:/Users/14083/Desktop/3C_Live_Study_Data.csv", header=T, na.strings="")
-view(df)
+#view(df)
 #df <- read.csv("C:/Users/14083/Desktop/3C_Live_Study_NA_Data.csv")
 #df <- read.csv("3C_Live_Study_NA_Data.csv")
 
@@ -167,12 +167,16 @@ table(omit_df$Education)
 # Perceived Risk and Value
 ```{r}
 mini_df <- omit_df %>% select(PerceivedRisk_1:PerceivedRisk_6)
-#mini_df
-omit_df <- omit_df %>% mutate(Perceived_Risk_Sum = rowSums(mini_df), .before = PerceivedValue_1)
-omit_df$Perceived_Risk_Sum
+omit_df <- omit_df %>% mutate(Perceived_Risk_Sum = rowSums(mini_df), 
+                              .before = PerceivedValue_1)
+omit_df <- omit_df %>% mutate(PerceivedRisk_index = rowMeans(mini_df),
+                              .before = PerceivedValue_1)
+
 mini_df <- omit_df %>% select(PerceivedValue_1:PerceivedValue_6)
-omit_df <- omit_df %>% mutate(Perceived_Value_Sum = rowSums(mini_df), .before = GCS_1)
-view(omit_df)
+omit_df <- omit_df %>% mutate(Perceived_Value_Sum = rowSums(mini_df),
+                              .before = GCS_1)
+omit_df <- omit_df %>% mutate(PercevedValue_index = rowMeans(mini_df), 
+                              .before = GCS_1)
 ```
 
 # COVID DoG
@@ -182,14 +186,17 @@ omit_df <- omit_df %>% mutate(COVID_DoG_Sum = rowSums(mini_df), .before = Pandem
 summary(omit_df$COVID_DoG_Sum)
 
 # make index of delaying across all 6 categories (average delaying across categories)
-omit_df <- omit_df %>% mutate(COVID_DoG_index = rowMeans(mini_df), .before = PandemicLengthExpect.1)
+omit_df <- omit_df %>% mutate(COVID_DoG_index = rowMeans(mini_df), 
+                              .before = PandemicLengthExpect.1)
 
 #create 1 index across social situations/gatherings
 mini_df <- omit_df %>% select(COVID_DoG_Questions.1:COVID_DoG_Questions.3)
-omit_df <- omit_df %>% mutate(socialgatherings_index = rowMeans(mini_df), .before = PandemicLengthExpect.1)
+omit_df <- omit_df %>% mutate(socialgatherings_index = rowMeans(mini_df),
+                              .before = PandemicLengthExpect.1)
 #create 1 index across traveling
 mini_df <- omit_df %>% select(COVID_DoG_Questions.4:COVID_DoG_Questions.6)
-omit_df <- omit_df %>% mutate(traveling_index = rowMeans(mini_df), .before = PandemicLengthExpect.1)
+omit_df <- omit_df %>% mutate(traveling_index = rowMeans(mini_df), 
+                              .before = PandemicLengthExpect.1)
 
 
 #view(omit_df)
@@ -198,60 +205,89 @@ omit_df <- omit_df %>% mutate(traveling_index = rowMeans(mini_df), .before = Pan
 # MCQ
 ```{r}
 mini_df <- omit_df %>% select(MCQ_1:MCQ_27)
-omit_df <- omit_df %>% mutate(MCQ_Sum = rowSums(mini_df), .before = COVID_DoG_Questions.1_1)
+omit_df <- omit_df %>% mutate(MCQ_Sum = rowSums(mini_df), 
+                              .before = COVID_DoG_Questions.1_1)
+omit_df <- omit_df %>% mutate(MCQ_index = rowMeans(mini_df), 
+                              .before = COVID_DoG_Questions.1_1)
 ```
 
 # Social Norms
 ```{r}
 mini_df <- omit_df %>% select(SocialNorms_Family_1:SocialNorms_Stranger_3)
-omit_df <- omit_df %>% mutate(Norms_Sum = rowSums(mini_df), .before = PerceivedRisk_1)
+omit_df <- omit_df %>% mutate(Norms_Sum = rowSums(mini_df), 
+                              .before = PerceivedRisk_1)
+omit_df <- omit_df %>% mutate(Norms_index = rowMeans(mini_df),
+                              .before = PerceivedRisk_1)
 ```
 
 # General Confidence
 ```{r}
 mini_df <- omit_df %>% select(contains("GCS"))
 #mini_df
-omit_df <- omit_df %>% mutate(GCS_Sum = rowSums(mini_df), .before = IUS_1)
+#omit_df <- omit_df %>% mutate(GCS_Sum = rowSums(mini_df), .before = IUS_1)
 #view(omit_df)
+omit_df <- omit_df %>% mutate(GCS_index = rowMeans(mini_df),
+                              .before = IUS_1)
 ```
 
 # Intolerance of Uncertainty
 ```{r}
 mini_df <- omit_df %>% select(IUS_1:IUS_12)
-omit_df <- omit_df %>% mutate(IUS_Sum = rowSums(mini_df), .before = MFQpart1_1)
+omit_df <- omit_df %>% mutate(IUS_Sum = rowSums(mini_df), 
+                              .before = MFQpart1_1)
+omit_df <- omit_df %>% mutate(IUS_index = rowMeans(mini_df),
+                              .before = MFQpart1_1)
 ```
 
 # Political Orientation
 ```{r}
 # measure 2
 mini_df <- omit_df %>% select(Measure2_2:Measure2_4)
-omit_df <- omit_df %>% mutate(Measure2_PO_Sum = rowSums(mini_df), .before = Measure5_1)
+omit_df <- omit_df %>% mutate(Measure2_PO_Sum = rowSums(mini_df), 
+                              .before = Measure5_1)
+omit_df <- omit_df %>% mutate(Measure2_PO_index = rowMeans(mini_df),
+                              .before = Measure5_1)
 # measure 5
 mini_df <- omit_df %>% select(Measure5_1:Measure5_14)
 omit_df <- omit_df %>% mutate(Measure5_PO_Sum = rowSums(mini_df))
+omit_df <- omit_df %>% mutate(Measure5_PO_index = rowMeans(mini_df))
 #combining both measures
 mini_df <- omit_df %>% select(contains("PO_Sum"))
 #mini_df
 omit_df <- omit_df %>% mutate(PO_Total_Sum = rowSums(mini_df))
+mini_df <- omit_df %>% select(contains("PO_index"))
+omit_df <- omit_df %>% mutate(PO_total_index = rowMeans(mini_df))
 ```
 
 # MFQ
 ```{r}
 MFQ_part1 <- omit_df %>% select(MFQpart1_1:MFQpart1_16)
 MFQ_part2 <- omit_df %>% select(MFQ_part2_1:MFQ_part2_16)
-omit_df <- omit_df %>% mutate(MFQ_sum_part1 = rowSums(MFQ_part1), .before = MFQ_part2_1)
-omit_df <- omit_df %>% mutate(MFQ_sum_part2 = rowSums(MFQ_part2), .before = Disgust_1)
+omit_df <- omit_df %>% mutate(MFQ_sum_part1 = rowSums(MFQ_part1), 
+                              .before = MFQ_part2_1)
+omit_df <- omit_df %>% mutate(MFQ_sum_part2 = rowSums(MFQ_part2), 
+                              .before = Disgust_1)
+omit_df <- omit_df %>% mutate(MFQpart1_index = rowMeans(MFQ_part1), 
+                              .before = MFQ_part2_1)
+omit_df <- omit_df %>% mutate(MFQpart2_index = rowMeans(MFQ_part2), 
+                              .before = Disgust_1)
 #view(omit_df)
 MFQ_total <- omit_df %>% select(contains("MFQ_sum"))
 #MFQ_total
-omit_df <- omit_df %>% mutate(MFQ_total_sum = rowSums(MFQ_total), .before = Disgust_1)
+omit_df <- omit_df %>% mutate(MFQ_total_sum = rowSums(MFQ_total), 
+                              .before = Disgust_1)
+omit_df <- omit_df %>% mutate(MFQtotal_index = rowMeans(MFQ_total),
+                              .before = Disgust_1)
 ```
 
 # COVID Stress
 ```{r}
 mini_df <- omit_df %>% select(contains("Worries") | contains("Problems") | contains("Checking"))
 #mini_df
-omit_df <- omit_df %>% mutate(Stress_Sum = rowSums(mini_df), .before = Impacts_financial1)
+omit_df <- omit_df %>% mutate(Stress_Sum = rowSums(mini_df), 
+                              .before = Impacts_financial1)
+omit_df <- omit_df %>% mutate(Stress_index = rowMeans(mini_df),
+                              .before = Impacts_financial1)
 ```
 
 # COVID Impacts and Experiences
@@ -259,20 +295,32 @@ omit_df <- omit_df %>% mutate(Stress_Sum = rowSums(mini_df), .before = Impacts_f
 Impacts <- omit_df %>% select(Impacts_financial1:Impacts_psychology3)
 Experiences <- omit_df %>% select(contains("PersonalDiagnoses") | contains("Proximity") | contains("News"))
 #Experiences
-omit_df <- omit_df %>% mutate(Impacts_sum = rowSums(Impacts), .before = PersonalDiagnoses_1)
-omit_df <- omit_df %>% mutate(Experiences_sum = rowSums(Experiences), .before = Age)
+omit_df <- omit_df %>% mutate(Impacts_sum = rowSums(Impacts), 
+                              .before = PersonalDiagnoses_1)
+omit_df <- omit_df %>% mutate(Experiences_sum = rowSums(Experiences),
+                              .before = Age)
+omit_df <- omit_df %>% mutate(Impacts_index = rowMeans(Impacts), 
+                              .before = PersonalDiagnoses_1)
+omit_df <- omit_df %>% mutate(Experiences_index = rowMeans(Experiences),
+                              .before = Age)
 ```
 
 # Disgust
 ```{r}
 mini_df <- omit_df %>% select(Disgust_1:Disgust_21)
-omit_df <- omit_df %>% mutate(Disgust_Sum = rowSums(mini_df), .before = SDRS.5_Q1)
+omit_df <- omit_df %>% mutate(Disgust_Sum = rowSums(mini_df), 
+                              .before = SDRS.5_Q1)
+omit_df <- omit_df %>% mutate(Disgust_index = rowMeans(mini_df), 
+                              .before = SDRS.5_Q1)
 ```
 
 # Social Desirability
 ```{r}
 mini_df <- omit_df %>% select(SDRS.5_Q1:SDRS.5_Q5)
-omit_df <- omit_df %>% mutate(SDRS_Sum = rowSums(mini_df), .before = Worries_1)
+omit_df <- omit_df %>% mutate(SDRS_Sum = rowSums(mini_df), 
+                              .before = Worries_1)
+omit_df <- omit_df %>% mutate(SDRS_index = rowMeans(mini_df), 
+                              .before = Worries_1)
 #view(omit_df)
 ```
 
@@ -280,6 +328,7 @@ omit_df <- omit_df %>% mutate(SDRS_Sum = rowSums(mini_df), .before = Worries_1)
 ```{r}
 summary(omit_df$PandemicLengthExpect.1)
 describe(omit_df$COVID_DoG_Sum)
+describe(omit_df$COVID_DoG_index)
 describe(omit_df$MCQ_Sum)
 describe(omit_df$Norms_Sum)
 describe(omit_df$GCS_Sum)
