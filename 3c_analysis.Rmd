@@ -91,6 +91,7 @@ df <- df %>% dplyr::mutate(!!dog1[[1]] := create_columns(dog1[[2]], dog1[[3]]),
               !!pandemic_len[[1]] := create_columns(pandemic_len[[2]], pandemic_len[[3]]),
               .before = SocialNorms_Family_1
               )
+view(df)
 
 #checks: are lengths the same?
 #length(pandemic_len[[2]])
@@ -138,6 +139,15 @@ which(omit_df == 1971, arr.ind=TRUE)
 # row = 232, col = 202
 omit_df[232,202] <- 2021-1971
 omit_df[232,202]
+
+```
+## Exploratory Factor Analysis for COVID DoG
+```{r}
+write.csv(df, 'df.csv')
+df[!complete.cases(df), ]
+COVID_DoG <- data.frame(df$COVID_DoG_Questions.1,df$COVID_DoG_Questions.2,df$COVID_DoG_Questions.3,df$COVID_DoG_Questions.4, df$COVID_DoG_Questions.5, df$COVID_DoG_Questions.6)
+COVID_DoG
+write.csv(COVID_DoG, 'COVID_DoG.csv')
 
 ```
 
@@ -197,6 +207,9 @@ omit_df <- omit_df %>% mutate(socialgatherings_index = rowMeans(mini_df),
 mini_df <- omit_df %>% select(COVID_DoG_Questions.4:COVID_DoG_Questions.6)
 omit_df <- omit_df %>% mutate(traveling_index = rowMeans(mini_df), 
                               .before = PandemicLengthExpect.1)
+
+> healthstudy <- cbind(healthstudy,weight.kg,agecat)
+
 
 
 #view(omit_df)
