@@ -143,7 +143,7 @@ omit_df[232,202]
 ```
 ## Exploratory Factor Analysis for COVID DoG
 # Creates csv of the df dataset AND csv with just the 6 questions (using transformed data with units in days) of COVID_DoG
-# Used by Winnie to do EFA separately
+# Used by Winnie to do EFA separately, see EFA_Analysis Doc in 3C repo
 ```{r}
 write.csv(df, 'df.csv')
 COVID_DoG <- data.frame(df$COVID_DoG_Questions.1,df$COVID_DoG_Questions.2,df$COVID_DoG_Questions.3,df$COVID_DoG_Questions.4, df$COVID_DoG_Questions.5, df$COVID_DoG_Questions.6)
