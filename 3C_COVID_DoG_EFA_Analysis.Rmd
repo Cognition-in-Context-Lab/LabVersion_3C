@@ -1,0 +1,392 @@
+---
+title: "3C_COVIDDoG_Analysis"
+author: "Winnie Zhuang"
+date: "5/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(kableExtra)
+library(PerformanceAnalytics)
+library(paran)
+```
+
+#Set Up
+##Load data
+```{r}
+dt<-read_csv("COVID_DoG.csv")
+
+head(dt)
+```
+
+Data only has 6 items. Hmmm interesting. 
+
+## Variable Key
+Let's make a varkey.
+```{r}
+varkey<- data.frame("varname"=c("COVID_DoG_Questions.1",
+                                "COVID_DoG_Questions.2",
+                                "COVID_DoG_Questions.3",
+                                "COVID_DoG_Questions.4",
+                                "COVID_DoG_Questions.5",
+                                "COVID_DoG_Questions.6"),
+                    "description"=c(
+                      "Going to a large social gathering like a wedding that includes family, friends, and strangers",
+                      "Going to a sporting event",
+                      "Going to a crowded recreational location (such as a beach, park, or trail for hiking)",
+                      "Going on a week long road trip, including hotels, stops for breaks, food, and gas, to visit a close family member or friend",
+                      "Going on a day trip, with breaks for food or gas, to visit a close family member or friend",
+                      "Driving a couple hours, with no stops, to visit a close family member or friend")
+                    )
+```
+
+
+## Descriptives
+```{r}
+dt %>% select(df.COVID_DoG_Questions.1:df.COVID_DoG_Questions.6) %>%
+  describe() %>% kable() %>% kable_styling()
+
+```
+All values numbers are in days. 
+
+#Diagnostics
+##Outliers
+First, let's look at distributions and check out outliers. 
+```{r}
+dt %>% select(df.COVID_DoG_Questions.1:df.COVID_DoG_Questions.6) %>% 
+  chart.Correlation()
+```
+A couple of extreme outliers in each variable. Let's take a closer look.
+
+Q1. 
+Going to a large social gathering like a wedding that includes family, friends, and strangers
+```{r}
+hist(dt$df.COVID_DoG_Questions.1)
+
+#a good rule of thumb is to remove anyone 3SD from mean
+q1_3sd<- sd(dt$df.COVID_DoG_Questions.1,na.rm=T) * 3 #get 3SD value
+dt$q1_outlier<-ifelse(dt$df.COVID_DoG_Questions.1>q1_3sd,1,0) #mark outliers
+sum(dt$q1_outlier) #how many outliers are there? 11
+
+#now view histogram again without outliers
+hist(dt$df.COVID_DoG_Questions.1[dt$q1_outlier!=1],breaks=50)
+```
+Well, the data certainly don't look normally distributed. There's a huge spike at approx 750 days. 
+
+Q2
+```{r}
+hist(dt$df.COVID_DoG_Questions.2)
+
+#a good rule of thumb is to remove anyone 3SD from mean
+q2_3sd<- sd(dt$df.COVID_DoG_Questions.2,na.rm=T) * 3 #get 3SD value
+dt$q2_outlier<-ifelse(dt$df.COVID_DoG_Questions.2>q2_3sd,1,0) #mark outliers
+sum(dt$q2_outlier) #how many outliers are there? 6
+
+#now view histogram again without outliers
+hist(dt$df.COVID_DoG_Questions.2[dt$q2_outlier!=1],breaks=50)
+```
+Again data is not normally distributed.
+
+Q3
+```{r}
+hist(dt$df.COVID_DoG_Questions.3)
+
+#a good rule of thumb is to remove anyone 3SD from mean
+q3_3sd<- sd(dt$df.COVID_DoG_Questions.3,na.rm=T) * 3 #get 3SD value
+dt$q3_outlier<-ifelse(dt$df.COVID_DoG_Questions.3>q3_3sd,1,0) #mark outliers
+sum(dt$q3_outlier) #how many outliers are there? 5
+
+#now view histogram again without outliers
+hist(dt$df.COVID_DoG_Questions.3[dt$q3_outlier!=1],breaks=50)
+```
+
+Q4
+```{r}
+hist(dt$df.COVID_DoG_Questions.4)
+
+#a good rule of thumb is to remove anyone 3SD from mean
+q4_3sd<- sd(dt$df.COVID_DoG_Questions.4,na.rm=T) * 3 #get 3SD value
+dt$q4_outlier<-ifelse(dt$df.COVID_DoG_Questions.4>q4_3sd,1,0) #mark outliers
+sum(dt$q4_outlier) #how many outliers are there? 5
+
+#now view histogram again without outliers
+hist(dt$df.COVID_DoG_Questions.4[dt$q4_outlier!=1],breaks=50)
+```
+
+Q5
+```{r}
+hist(dt$df.COVID_DoG_Questions.5)
+
+#a good rule of thumb is to remove anyone 3SD from mean
+q5_3sd<- sd(dt$df.COVID_DoG_Questions.5,na.rm=T) * 3 #get 3SD value
+dt$q5_outlier<-ifelse(dt$df.COVID_DoG_Questions.5>q5_3sd,1,0) #mark outliers
+sum(dt$q5_outlier) #how many outliers are there? 12
+
+#now view histogram again without outliers
+hist(dt$df.COVID_DoG_Questions.5[dt$q5_outlier!=1],breaks=50)
+```
+
+Q6
+```{r}
+hist(dt$df.COVID_DoG_Questions.6)
+
+#a good rule of thumb is to remove anyone 3SD from mean
+q6_3sd<- sd(dt$df.COVID_DoG_Questions.6,na.rm=T) * 3 #get 3SD value
+dt$q6_outlier<-ifelse(dt$df.COVID_DoG_Questions.6>q6_3sd,1,0) #mark outliers
+sum(dt$q6_outlier) #how many outliers are there? 4
+
+#now view histogram again without outliers
+hist(dt$df.COVID_DoG_Questions.6[dt$q6_outlier!=1],breaks=50)
+```
+
+Overall, it looks like the data are not normally distributed and also have increasingly large intervals with larger # of days. This makes sense because the timepoint intervals in days get larger as the time durations increase (i.e. participants can only mark 1 year, 2 years, which correspond to a 365 difference in days). 
+
+This is making me think that we might consider including the response date duration selected by the subject, and possibly separately analyzing them. 
+
+##Correlations
+Let's examine correlations among variables without outliers. Check that correlations are linear. 
+```{r}
+outliers<- dt %>% names() %>% keep(~str_detect(.,"outlier")) #make a outlier list
+dt %>% filter_at(vars(outliers), all_vars(.==0)) %>% #filter out outliers
+  select(df.COVID_DoG_Questions.1:df.COVID_DoG_Questions.6) %>% 
+  chart.Correlation()
+```
+Again an issue with outliers due to large intervals in  individual variable distributions. We can see there're mostly  linear relationships until the # of days goes above 400.
+
+##<365 days only
+What if we consider only consider participants who responded w/ values <1 year? This might avoid some of the large gaps in the larger numbers.
+```{r}
+dogvars<- dt %>% names() %>% keep(~str_detect(.,"COVID_DoG")) #make a outlier list
+
+dt %>% filter_at(vars(dogvars),all_vars(.<=365)) %>%
+  select(df.COVID_DoG_Questions.1:df.COVID_DoG_Questions.6) %>% 
+  chart.Correlation()
+  
+```
+Variables are still non-normal, but do seem to show linear relationships.
+
+#EFA
+Let's try an EFA with all data, without univariate outliers, and without those who reported >365 days to see how many factors explain the questionnaire.
+
+## All Data
+###Parallel analysis
+```{r}
+dt_all<-dt %>% select(df.COVID_DoG_Questions.1:df.COVID_DoG_Questions.6)
+
+all.pa<-paran(na.omit(dt_all),graph=T,
+               cfa=T)
+```
+2 factors. Interesting!
+
+### 2 factors
+```{r}
+all.fa2r<-factanal(x = na.omit(dt_all), 
+                   factors = 2,method ="mle",
+                   #rotation="promax",
+                   #start=as.matrix(rep(.1,11)),
+                   scores=  "regression") #performs EFA w/ promax rotation
+print(all.fa2r, cutoff=.3)
+```
+Nice, the factor loadings actually align for the most part with theorized structure. 
+
+### 3 factors
+```{r}
+all.fa3r<-factanal(x = na.omit(dt_all), 
+                   factors = 3,method ="mle",
+                   #rotation="promax",
+                   #start=as.matrix(rep(.1,11)),
+                   scores=  "regression") #performs EFA w/ promax rotation
+print(all.fa3r, cutoff=.3)
+```
+
+## No outliers
+###Parallel analysis
+```{r}
+dt_out<-dt %>% filter_at(vars(outliers), all_vars(.==0)) %>% #filter out outliers
+  select(df.COVID_DoG_Questions.1:df.COVID_DoG_Questions.6)
+
+all.pa<-paran(na.omit(dt_out),graph=T,
+               cfa=T)
+```
+Again 2 factors retained. 
+
+### 2 factors
+```{r}
+out.fa2r<-factanal(x = na.omit(dt_out), 
+                   factors = 2,method ="mle",
+                   #rotation="promax",
+                   #start=as.matrix(rep(.1,11)),
+                   scores=  "regression") #performs EFA w/ promax rotation
+print(out.fa2r, cutoff=.3)
+```
+Hmm, sort of looking like the intended factor structure. 
+
+##<365 days
+
+### Parallel Analysis
+```{r}
+dt_yr<-dt %>% filter_at(vars(dogvars),all_vars(.<=365)) %>%
+  select(df.COVID_DoG_Questions.1:df.COVID_DoG_Questions.6)
+
+yr.pa<-paran(na.omit(dt_yr),graph=T,
+               cfa=T)
+```
+2 factors again!
+
+###2 factors
+```{r}
+
+yr.fa2r<-factanal(x = na.omit(dt_yr), 
+                   factors = 2,method ="mle",
+                   #rotation="promax",
+                   #start=as.matrix(rep(.1,11)),
+                   scores=  "regression") #performs EFA w/ promax rotation
+print(yr.fa2r, cutoff=.3)
+```
+Similar pattern of results!
+
+#CFA
+##all Data
+### 1 factor
+```{r}
+all.cfa1<- "
+  ly1 =~ df.COVID_DoG_Questions.1 + df.COVID_DoG_Questions.2 + df.COVID_DoG_Questions.3 + df.COVID_DoG_Questions.4 + df.COVID_DoG_Questions.5 + df.COVID_DoG_Questions.6
+  
+  #means
+  ly1 ~ 0
+  
+  #variances
+  ly1 ~~ start(1.1)*ly1
+"
+fit.all.cfa1<-cfa(all.cfa1, data=dt_all,
+                     missing="fiml")
+
+summary(fit.all.cfa1,fit.measures=TRUE)
+
+```
+Large variance estimates due to the outliers I think.
+
+
+### 2 factors
+Let's test the theorized structure. 
+```{r}
+all.cfa2<- "
+  ly1 =~ df.COVID_DoG_Questions.1 + df.COVID_DoG_Questions.2 + df.COVID_DoG_Questions.3 
+  ly2 =~ df.COVID_DoG_Questions.4 + df.COVID_DoG_Questions.5 + df.COVID_DoG_Questions.6
+  
+  #means
+  #ly1 ~ 0
+  
+  #variances
+  #ly1 ~~ start(1.1)*ly1
+"
+fit.all.cfa2<-cfa(all.cfa2, data=dt_all,
+                     missing="fiml")
+
+summary(fit.all.cfa2,fit.measures=TRUE)
+
+```
+Hmmm, this 2 factor model actually looks worse than the 1 factor model.
+
+### Compare
+Let's compare them.
+```{r}
+anova(fit.all.cfa2,fit.all.cfa1)
+```
+
+Yeah, the 1 factor model actually fits the data better than the 2 factor model. 
+
+##No outliers
+###1 factor
+```{r}
+out.cfa1<- "
+  ly1 =~ df.COVID_DoG_Questions.1 + df.COVID_DoG_Questions.2 + df.COVID_DoG_Questions.3 + df.COVID_DoG_Questions.4 + df.COVID_DoG_Questions.5 + df.COVID_DoG_Questions.6
+  
+  #means
+  ly1 ~ 0
+  
+  #variances
+  ly1 ~~ start(1.1)*ly1
+"
+fit.out.cfa1<-cfa(out.cfa1, data=dt_out,
+                     missing="fiml")
+
+summary(fit.out.cfa1,fit.measures=TRUE)
+
+```
+
+### 2 factors
+```{r}
+out.cfa2<- "
+  ly1 =~ df.COVID_DoG_Questions.1 + df.COVID_DoG_Questions.2 + df.COVID_DoG_Questions.3 
+  ly2 =~ df.COVID_DoG_Questions.4 + df.COVID_DoG_Questions.5 + df.COVID_DoG_Questions.6
+  
+  #means
+  #ly1 ~ 0
+  
+  #variances
+  #ly1 ~~ start(1.1)*ly1
+"
+fit.out.cfa2<-cfa(out.cfa2, data=dt_out,
+                     missing="fiml")
+
+summary(fit.out.cfa2,fit.measures=TRUE)
+
+```
+
+### Compare
+```{r}
+anova(fit.out.cfa2,fit.out.cfa1)
+```
+Without outliers, the 2 factor CFA fits better. 
+
+## <365 days
+###1 factor
+```{r}
+yr.cfa1<- "
+  ly1 =~ df.COVID_DoG_Questions.1 + df.COVID_DoG_Questions.2 + df.COVID_DoG_Questions.3 + df.COVID_DoG_Questions.4 + df.COVID_DoG_Questions.5 + df.COVID_DoG_Questions.6
+  
+  #means
+  ly1 ~ 0
+  
+  #variances
+  ly1 ~~ start(1.1)*ly1
+"
+fit.yr.cfa1<-cfa(yr.cfa1, data=dt_yr,
+                     missing="fiml")
+
+summary(fit.yr.cfa1,fit.measures=TRUE)
+
+```
+
+### 2 factors
+```{r}
+yr.cfa2<- "
+  ly1 =~ df.COVID_DoG_Questions.1 + df.COVID_DoG_Questions.2 + df.COVID_DoG_Questions.3 
+  ly2 =~ df.COVID_DoG_Questions.4 + df.COVID_DoG_Questions.5 + df.COVID_DoG_Questions.6
+  
+  #means
+  #ly1 ~ 0
+  
+  #variances
+  #ly1 ~~ start(1.1)*ly1
+"
+fit.yr.cfa2<-cfa(yr.cfa2, data=dt_yr,
+                     missing="fiml")
+
+summary(fit.yr.cfa2,fit.measures=TRUE)
+
+```
+
+### Compare
+```{r}
+anova(fit.yr.cfa2,fit.yr.cfa1)
+```
+With only those who responded <365 days, the 2 factor CFA fits better. 
+
+#Conclusion
+Remove outliers with a threshold of at least 3SD from univariate means. The intended 2 factor structure fits that data without outliers decently. I'd recommend mean summary scores can be calculated for non-outlying data points. 
+
+However, remaining concern is the increasing intervals between data points at larger values across all variables. We should look closely at plots for all analyses done with the DoG data. 
