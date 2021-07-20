@@ -9,6 +9,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 # Packages
+library("ggpubr")
 library(psych)
 library(tidyverse)
 library(ggplot2)
@@ -16,10 +17,9 @@ library(ggplot2)
 #library(plyr)
 ```
 
-
 ## Load and Cleanup Data
 ```{r}
-df <- read.csv("C:/Users/14083/Desktop/3C_Live_Study_Data.csv", header=T, na.strings="")
+df <- read.csv("3C_Live_Study_Data.csv", header=T, na.strings="")
 #view(df)
 #df <- read.csv("C:/Users/14083/Desktop/3C_Live_Study_NA_Data.csv")
 #df <- read.csv("3C_Live_Study_NA_Data.csv")
@@ -151,26 +151,6 @@ COVID_DoG
 write.csv(COVID_DoG, 'COVID_DoG.csv')
 ```
 
-## Demographics Analyses
-```{r}
-## number of included participants
-#study requested 400 participants: 
-#original df dataset had 444 rows, removed 47 rows in Load and Cleanup Data section (unneeded rows, incomplete trials, pilot data, and too short or too long entries) = 397 rows 
-#omit_df dataset had 397 rows, removed 6 entries with missing data 
-nrow(omit_df) # 391 rows
-# thus, we excluded 9 participants (from 400 collected)
-
-#duration, demographics
-mean(df$Duration..in.seconds., na.rm = TRUE)
-mean(omit_df$Duration..in.seconds.)
-sd(omit_df$Duration..in.seconds.)
-
-summary(omit_df$Age)
-table(omit_df$Gender)
-table(omit_df$Race)
-table(omit_df$Education)
-```
-
 ## Add summary columns to calculate descriptive statistics
 # Placed before Summary statistics because summary columns required for calculations
 
@@ -189,13 +169,13 @@ omit_df <- omit_df %>% mutate(PercevedValue_index = rowMeans(mini_df),
                               .before = GCS_1)
 ```
 
-# COVID DoG
+# COVID DoG Indice 
 ```{r}
 mini_df <- omit_df %>% select(COVID_DoG_Questions.1:COVID_DoG_Questions.6)
 omit_df <- omit_df %>% mutate(COVID_DoG_Sum = rowSums(mini_df), .before = PandemicLengthExpect.1)
 summary(omit_df$COVID_DoG_Sum)
 
-# make index of delaying across all 6 categories (average delaying across categories)
+# make index of delaying across all 6 questions (average delaying across categories)
 omit_df <- omit_df %>% mutate(COVID_DoG_index = rowMeans(mini_df), 
                               .before = PandemicLengthExpect.1)
 
@@ -207,8 +187,42 @@ omit_df <- omit_df %>% mutate(socialgatherings_index = rowMeans(mini_df),
 mini_df <- omit_df %>% select(COVID_DoG_Questions.4:COVID_DoG_Questions.6)
 omit_df <- omit_df %>% mutate(traveling_index = rowMeans(mini_df), 
                               .before = PandemicLengthExpect.1)
+
 #view(omit_df)
+
 ```
+
+# COVID DoG and Pandemic Expextation Outlier Exclusions 
+```{r}
+
+# COVID DoG Indice SD = 363.78
+
+## 3 Standard Devations above COVID DoG Indice mean calculation 
+
+341.94 + 363.78 + 363.78 +363.78 
+
+## Exclusion of participants 3SD above COVID DoG Indice
+
+omit_df[which(omit_df$'COVID_DoG_index' >=  1433.28), ] #returns 7
+
+omit_df <- omit_df[-c(23, 176, 243, 323, 331, 350, 364), ]
+
+# Pandemic Expectation SD = 930.63
+
+## 3 Standard Deviations above mean calculation 
+
+694.66 + 930.63 + 930.63 + 930.63
+
+## Exclusion of participants 3SD above Pandemic Expectation Indice
+
+omit_df[which(omit_df$'PandemicLengthExpect.1' >=  3486.55), ] #returns 5
+
+omit_df <- omit_df[-c(118, 191, 252, 270, 392), ]
+
+#380 participants are now left out of the original 397
+```
+
+# Remaining Task Indicies #
 
 # MCQ
 ```{r}
@@ -320,6 +334,8 @@ omit_df <- omit_df %>% mutate(Disgust_Sum = rowSums(mini_df),
                               .before = SDRS.5_Q1)
 omit_df <- omit_df %>% mutate(Disgust_index = rowMeans(mini_df), 
                               .before = SDRS.5_Q1)
+
+
 ```
 
 # Social Desirability
@@ -332,7 +348,9 @@ omit_df <- omit_df %>% mutate(SDRS_index = rowMeans(mini_df),
 #view(omit_df)
 ```
 
-# Summary statistics
+# ANALYSIS SECTION #
+
+## Summary statistics ##
 ```{r}
 summary(omit_df$PandemicLengthExpect.1)
 describe(omit_df$COVID_DoG_Sum)
@@ -357,9 +375,29 @@ describe(omit_df$PO_Total_Sum)
 describe(omit_df$Perceived_Risk_Sum)
 ```
 
-# Graphs
+## Demographics ## 
+
 ```{r}
-##Demographics
+## number of included participants
+#study requested 400 participants: 
+#original df dataset had 444 rows, removed 47 rows in Load and Cleanup Data section (unneeded rows, incomplete trials, pilot data, and too short or too long entries) = 397 rows 
+#omit_df dataset had 397 rows, removed 6 entries with missing data 
+#another 12 were removed for responses that were 3SD above folks average COVID DoG or COVID expexted pandemic ength 
+nrow(omit_df) # 380 rows
+# thus, we excluded 20 participants (from 400 collected)
+
+#duration, demographics
+mean(df$Duration..in.seconds., na.rm = TRUE)
+mean(omit_df$Duration..in.seconds.)
+sd(omit_df$Duration..in.seconds.)
+
+summary(omit_df$Age)
+table(omit_df$Gender)
+table(omit_df$Race)
+table(omit_df$Education)
+```
+
+```{r}
 #Age
 hist(omit_df$Age)
 
@@ -395,7 +433,40 @@ hist(omit_df$COVID_DoG_index)
 
 ```
 
-## Task Analyses
+## Preliminary Analyses ##
+```{r}
+#correlations
+##COVID DoG index and Expextation of Pandemic Length
+ggscatter(omit_df, x = "COVID_DoG_index", y = "PandemicLengthExpect.1", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Partipcants'Average COVID Delay of Gratification ", ylab = "Partipcants'Expextation of Pandemic Length")
+##Traveling index and social gatherings index
+ggscatter(omit_df, x = "traveling_index", y = "socialgatherings_index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "traveling index ", ylab = "social gathering index")
+##COVID DoG index and impact
+ggscatter(omit_df, x = "COVID_DoG_index", y = "Impacts_index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Partipcants'Average COVID Delay of Gratification ", ylab = "Partipcants' average impact from COVID19")
+
+##COVID DoG index and Experiences
+ggscatter(omit_df, x = "COVID_DoG_index", y = "Experiences_index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Partipcants'Average COVID Delay of Gratification ", ylab = "Partipcants' average expereince from COVID19")
+
+##COVID DoG index and stress_index
+ggscatter(omit_df, x = "COVID_DoG_index", y = "Stress_index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Partipcants'Average COVID Delay of Gratification ", ylab = "Partipcants' average stress about COVID19")
+
+```
+
+## Task Analyses ##
 # COVID DoG and Perceived Risk/Value
 ```{r}
 hist(omit_df$socialgatherings_index)
