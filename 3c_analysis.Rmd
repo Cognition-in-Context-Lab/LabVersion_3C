@@ -205,8 +205,6 @@ omit_df <- omit_df %>% mutate(traveling_index = rowMeans(mini_df),
 
 omit_df[which(omit_df$'COVID_DoG_index' >=  1433.28), ] #returns 7
 
-omit_df <- omit_df[-c(23, 176, 243, 323, 331, 350, 364), ]
-
 # Pandemic Expectation SD = 930.63
 
 ## 3 Standard Deviations above mean calculation 
@@ -217,9 +215,46 @@ omit_df <- omit_df[-c(23, 176, 243, 323, 331, 350, 364), ]
 
 omit_df[which(omit_df$'PandemicLengthExpect.1' >=  3486.55), ] #returns 5
 
-omit_df <- omit_df[-c(118, 191, 252, 270, 392), ]
+#can subset(omit_df, PandemicLengthExpect.1 >= 3486.55 && COVID_DoG_index  >= 1433.28)
 
-#380 participants are now left out of the original 397
+omit_df <- omit_df %>% slice(-c(23, 118, 176, 191, 243, 252, 270, 323, 331, 350, 364, 392))
+
+#380 participants are now left out of the original 397, but it seems like it is not removing the data we actually want to?
+
+```
+
+#Attempt to normalize COVID DoG and Pandemic Length Expextation Data 
+```{r}
+
+# Plot for COVID DoG index (average delaying across 6 scenarios for each participant)
+hist(omit_df$COVID_DoG_index)
+
+# Plot for Pandemic Length Expectation (average pandemic length expectation for each participant)
+hist(omit_df$PandemicLengthExpect.1)
+
+# Log transformation of COVID DoG Index 
+
+omit_df$logCOVID_DoG_index=log(omit_df$COVID_DoG_index)
+
+hist(omit_df$logCOVID_DoG_index)
+
+#a lot of the data is centered around a couple bars, what does it look like if we make more bars?
+
+hist(omit_df$logCOVID_DoG_index, breaks = 50)
+
+
+# Log transformation of Pandemic Length Expextation
+
+omit_df$logPandemicLengthExpect.1=log(omit_df$PandemicLengthExpect.1)
+
+hist(omit_df$logPandemicLengthExpect.1) 
+
+#a lot of the data is centered around a couple bars, what does it look like if we make more bars?
+
+hist(omit_df$logPandemicLengthExpect.1, breaks = 50) 
+
+
+
 ```
 
 # Remaining Task Indicies #
@@ -423,9 +458,6 @@ ggplot(omit_df) +
   geom_bar(aes(x = RaceasFactor)) +
   ggtitle("Count of Race") +
   theme(plot.title = element_text(hjust = 0.5))
-
-# Plot for COVID DoG index (average delaying across 6 scenarios for each participant)
-hist(omit_df$COVID_DoG_index)
 
 # Relations between variables
 #ggplot(data = omit_df) + 
