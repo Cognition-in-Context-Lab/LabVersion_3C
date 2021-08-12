@@ -16,31 +16,44 @@ library(ggplot2)
 #library(dplyr)
 #library(plyr)
 ```
+# PROCESSING and PRE-ANALYSIS SECTION # 
 
 ## Load and Cleanup Data
 ```{r}
 df <- read.csv("3C_Live_Study_Data.csv", header=T, na.strings="")
-#view(df)
-#df <- read.csv("C:/Users/14083/Desktop/3C_Live_Study_NA_Data.csv")
-#df <- read.csv("3C_Live_Study_NA_Data.csv")
+
+#442 total participants 
+#413 participants completed the entire study, 29 did not. 
 
 ## Drop unneeded rows (pilot data, incomplete trials, remove entries that are shorter than 6 mins longer than 60 minutes) & cols
 unneeded_cols <- c("StartDate", "EndDate", "Status", "IPAddress", "Progress", "Finished", "RecordedDate", "ResponseId", "RecipientLastName", "RecipientFirstName", "RecipientEmail", "ExternalReference", "LocationLatitude", "LocationLongitude", "DistributionChannel", "UserLanguage", "Gender_4_TEXT...Parent.Topics", "Gender_4_TEXT...Sentiment.Polarity", "Gender_4_TEXT...Sentiment.Score", "Gender_4_TEXT...Sentiment", "Gender_4_TEXT...Topics", "Gender_4_TEXT...Topic.Sentiment.Label", "Gender_4_TEXT...Topic.Sentiment.Score")
 
 # Return entries where duration was longer than 45 min.
 df$'Duration..in.seconds.' = as.numeric(as.character(df$'Duration..in.seconds.'))
-df[which(df$'Duration..in.seconds.' >= 45*60), ]  # 4 entries
+df[which(df$'Duration..in.seconds.' >= 45*60), ]  # 4 entries, 394, 410, 415, and 444. 410 = 31 seconds over limit, so not going to exclude. 
 
 # return entries where duration was shorter than 6 mins.
 df$'Duration..in.seconds.' = as.numeric(as.character(df$'Duration..in.seconds.'))
-df[which(df$'Duration..in.seconds.' <= 360), ]   # 29 entries
+df[which(df$'Duration..in.seconds.' <= 360), ]   # 29 entries, 8,9,10, 11, 12, 14, 22, 205, 222, 255, 324, 416, 417, 418, 419, 420, 421, 423, 424, 426, 429, 432, 433, 434, 436, 439, 443
 
 # remove Gender and Race open response columns to be able to remove rows with missing values
 NAcols <- c("Gender_4_TEXT", "Race_6_TEXT")
 
-df <- df[-c(1:7,8:12,22,205,222,255,324,415:444), ]  #removed 47 entries
+# Exclude folks who took longer than 45 mins or were shorter than 6 mins, un-needed columns, and DoG and Pandemic Expextation outliers (see lines 145 for exclusion criteria calcuations. DoG and Expextation Outliers removed here because of not able to do it below. )
+
+#exclude remaining folks progress less than 100 percent 
+
+df[which(df$'Progress' <= 100), ]
+
+# Remove all the folks who meet the criteria stated above 
+
+df <- df[-c(1,2,8:12,14,22,23,118,176,191,205,222,255,243,252,270,323,324,331,350,364,392,394,415:444,423,424,426,426,429,432:434,436,439,443,444), ]
+
 df <- df[ , !names(df) %in% unneeded_cols]
 df <- df[ , !names(df) %in% NAcols]
+
+#388 participants are now left out of the original 442
+
 ```
 
 ## Creating COVID19 DoG Index 
@@ -141,34 +154,8 @@ omit_df[232,202] <- 2021-1971
 omit_df[232,202]
 
 ```
-## Exploratory Factor Analysis for COVID DoG
-# Creates csv of the df dataset AND csv with just the 6 questions (using transformed data with units in days) of COVID_DoG
-# Used by Winnie to do EFA separately, see EFA_Analysis Doc in 3C repo
-```{r}
-write.csv(df, 'df.csv')
-COVID_DoG <- data.frame(df$COVID_DoG_Questions.1,df$COVID_DoG_Questions.2,df$COVID_DoG_Questions.3,df$COVID_DoG_Questions.4, df$COVID_DoG_Questions.5, df$COVID_DoG_Questions.6)
-COVID_DoG
-write.csv(COVID_DoG, 'COVID_DoG.csv')
-```
 
-## Add summary columns to calculate descriptive statistics
-# Placed before Summary statistics because summary columns required for calculations
-
-# Perceived Risk and Value
-```{r}
-mini_df <- omit_df %>% select(PerceivedRisk_1:PerceivedRisk_6)
-omit_df <- omit_df %>% mutate(Perceived_Risk_Sum = rowSums(mini_df), 
-                              .before = PerceivedValue_1)
-omit_df <- omit_df %>% mutate(PerceivedRisk_index = rowMeans(mini_df),
-                              .before = PerceivedValue_1)
-
-mini_df <- omit_df %>% select(PerceivedValue_1:PerceivedValue_6)
-omit_df <- omit_df %>% mutate(Perceived_Value_Sum = rowSums(mini_df),
-                              .before = GCS_1)
-omit_df <- omit_df %>% mutate(PercevedValue_index = rowMeans(mini_df), 
-                              .before = GCS_1)
-```
-
+## COVID DoG and Pandemic Expextation Processing 
 # COVID DoG Indice 
 ```{r}
 mini_df <- omit_df %>% select(COVID_DoG_Questions.1:COVID_DoG_Questions.6)
@@ -215,15 +202,10 @@ omit_df[which(omit_df$'COVID_DoG_index' >=  1433.28), ] #returns 7
 
 omit_df[which(omit_df$'PandemicLengthExpect.1' >=  3486.55), ] #returns 5
 
-#can subset(omit_df, PandemicLengthExpect.1 >= 3486.55 && COVID_DoG_index  >= 1433.28)
-
-omit_df <- omit_df %>% slice(-c(23, 118, 176, 191, 243, 252, 270, 323, 331, 350, 364, 392))
-
-#380 participants are now left out of the original 397, but it seems like it is not removing the data we actually want to?
-
+#See line 44 for exclusions
 ```
 
-#Attempt to normalize COVID DoG and Pandemic Length Expextation Data 
+# Attempt to normalize COVID DoG and Pandemic Length Expextation Data 
 ```{r}
 
 # Plot for COVID DoG index (average delaying across 6 scenarios for each participant)
@@ -257,27 +239,39 @@ hist(omit_df$logPandemicLengthExpect.1, breaks = 50)
 
 ```
 
-# Remaining Task Indicies #
+## Remaining Task Indicies 
 
-# MCQ
+# MCQ (specfic analysis)
 ```{r}
-mini_df <- omit_df %>% select(MCQ_1:MCQ_27)
-omit_df <- omit_df %>% mutate(MCQ_Sum = rowSums(mini_df), 
-                              .before = COVID_DoG_Questions.1_1)
-omit_df <- omit_df %>% mutate(MCQ_index = rowMeans(mini_df), 
-                              .before = COVID_DoG_Questions.1_1)
 ```
 
-# Social Norms
+# Perceived COVID DoG Risk and Value
+```{r}
+mini_df <- omit_df %>% select(PerceivedRisk_1:PerceivedRisk_6)
+omit_df <- omit_df %>% mutate(Perceived_Risk_Sum = rowSums(mini_df), 
+                              .before = PerceivedValue_1)
+omit_df <- omit_df %>% mutate(PerceivedRisk_index = rowMeans(mini_df),
+                              .before = PerceivedValue_1)
+
+mini_df <- omit_df %>% select(PerceivedValue_1:PerceivedValue_6)
+omit_df <- omit_df %>% mutate(Perceived_Value_Sum = rowSums(mini_df),
+                              .before = GCS_1)
+omit_df <- omit_df %>% mutate(PercevedValue_index = rowMeans(mini_df), 
+                              .before = GCS_1)
+
+```
+
+# Social Norms (Mean)
 ```{r}
 mini_df <- omit_df %>% select(SocialNorms_Family_1:SocialNorms_Stranger_3)
-omit_df <- omit_df %>% mutate(Norms_Sum = rowSums(mini_df), 
-                              .before = PerceivedRisk_1)
 omit_df <- omit_df %>% mutate(Norms_index = rowMeans(mini_df),
                               .before = PerceivedRisk_1)
+
+hist(omit_df$Norms_index, breaks = 50) 
+
 ```
 
-# General Confidence
+# General Confidence (sum score)
 ```{r}
 mini_df <- omit_df %>% select(contains("GCS"))
 #mini_df
@@ -285,18 +279,22 @@ mini_df <- omit_df %>% select(contains("GCS"))
 #view(omit_df)
 omit_df <- omit_df %>% mutate(GCS_index = rowMeans(mini_df),
                               .before = IUS_1)
+
+hist(omit_df$GCS_index, breaks = 50) 
+
 ```
 
-# Intolerance of Uncertainty
+# Intolerance of Uncertainty (sum score, with one factor, or two factors (1-7 for prospective anexity + 8-12 for inhibitory anexity))
 ```{r}
 mini_df <- omit_df %>% select(IUS_1:IUS_12)
 omit_df <- omit_df %>% mutate(IUS_Sum = rowSums(mini_df), 
                               .before = MFQpart1_1)
-omit_df <- omit_df %>% mutate(IUS_index = rowMeans(mini_df),
-                              .before = MFQpart1_1)
+
+hist(omit_df$IUS_index, breaks = 50) 
+
 ```
 
-# Political Orientation
+# Political Orientation ( Measure 2 with means for each predictor, Measure 5 with means across the two factors)
 ```{r}
 # measure 2
 mini_df <- omit_df %>% select(Measure2_2:Measure2_4)
@@ -316,7 +314,7 @@ mini_df <- omit_df %>% select(contains("PO_index"))
 omit_df <- omit_df %>% mutate(PO_total_index = rowMeans(mini_df))
 ```
 
-# MFQ
+# MFQ (5 Factor Index)
 ```{r}
 MFQ_part1 <- omit_df %>% select(MFQpart1_1:MFQpart1_16)
 MFQ_part2 <- omit_df %>% select(MFQ_part2_1:MFQ_part2_16)
@@ -337,43 +335,39 @@ omit_df <- omit_df %>% mutate(MFQtotal_index = rowMeans(MFQ_total),
                               .before = Disgust_1)
 ```
 
-# COVID Stress
+# COVID Stress (Mean across all three portions and three seperate)
 ```{r}
 mini_df <- omit_df %>% select(contains("Worries") | contains("Problems") | contains("Checking"))
 #mini_df
-omit_df <- omit_df %>% mutate(Stress_Sum = rowSums(mini_df), 
-                              .before = Impacts_financial1)
 omit_df <- omit_df %>% mutate(Stress_index = rowMeans(mini_df),
                               .before = Impacts_financial1)
+
+hist(omit_df$Stress_index, breaks = 50) 
+
+#whats going on here?  Why is it graphing like this?
+
 ```
 
-# COVID Impacts and Experiences
+# COVID Impacts and Experiences (Ipmacts calculated as a mean, Expereinces TBD)
 ```{r}
 Impacts <- omit_df %>% select(Impacts_financial1:Impacts_psychology3)
 Experiences <- omit_df %>% select(contains("PersonalDiagnoses") | contains("Proximity") | contains("News"))
-#Experiences
-omit_df <- omit_df %>% mutate(Impacts_sum = rowSums(Impacts), 
-                              .before = PersonalDiagnoses_1)
-omit_df <- omit_df %>% mutate(Experiences_sum = rowSums(Experiences),
-                              .before = Age)
 omit_df <- omit_df %>% mutate(Impacts_index = rowMeans(Impacts), 
                               .before = PersonalDiagnoses_1)
 omit_df <- omit_df %>% mutate(Experiences_index = rowMeans(Experiences),
                               .before = Age)
 ```
 
-# Disgust
+# Disgust (Mean Index)
 ```{r}
 mini_df <- omit_df %>% select(Disgust_1:Disgust_21)
-omit_df <- omit_df %>% mutate(Disgust_Sum = rowSums(mini_df), 
-                              .before = SDRS.5_Q1)
 omit_df <- omit_df %>% mutate(Disgust_index = rowMeans(mini_df), 
                               .before = SDRS.5_Q1)
 
 
 ```
 
-# Social Desirability
+# Social Desirability (transformed sum)
 ```{r}
 mini_df <- omit_df %>% select(SDRS.5_Q1:SDRS.5_Q5)
 omit_df <- omit_df %>% mutate(SDRS_Sum = rowSums(mini_df), 
@@ -410,16 +404,15 @@ describe(omit_df$PO_Total_Sum)
 describe(omit_df$Perceived_Risk_Sum)
 ```
 
-## Demographics ## 
+## Demographics ##  
 
 ```{r}
 ## number of included participants
 #study requested 400 participants: 
-#original df dataset had 444 rows, removed 47 rows in Load and Cleanup Data section (unneeded rows, incomplete trials, pilot data, and too short or too long entries) = 397 rows 
-#omit_df dataset had 397 rows, removed 6 entries with missing data 
-#another 12 were removed for responses that were 3SD above folks average COVID DoG or COVID expexted pandemic ength 
-nrow(omit_df) # 380 rows
-# thus, we excluded 20 participants (from 400 collected)
+#original df dataset had 444 rows, removed 62 rows in Load and Cleanup Data section (unneeded rows, DoG/pandemic outliers, incomplete trials, and too short or too long entries) = 388 rows 
+#omit_df dataset had 388 rows, removed 6 entries with missing data 
+
+nrow(omit_df) # 382 rows
 
 #duration, demographics
 mean(df$Duration..in.seconds., na.rm = TRUE)
@@ -465,40 +458,47 @@ ggplot(omit_df) +
 
 ```
 
-## Preliminary Analyses ##
+## Preliminary Analyses/ Correlations 
 ```{r}
-#correlations
-##COVID DoG index and Expextation of Pandemic Length
+# COVID DoG index and Expextation of Pandemic Length
 ggscatter(omit_df, x = "COVID_DoG_index", y = "PandemicLengthExpect.1", 
           add = "reg.line", conf.int = TRUE, 
           cor.coef = TRUE, cor.method = "pearson",
           xlab = "Partipcants'Average COVID Delay of Gratification ", ylab = "Partipcants'Expextation of Pandemic Length")
-##Traveling index and social gatherings index
+# Traveling index and social gatherings index
 ggscatter(omit_df, x = "traveling_index", y = "socialgatherings_index", 
           add = "reg.line", conf.int = TRUE, 
           cor.coef = TRUE, cor.method = "pearson",
           xlab = "traveling index ", ylab = "social gathering index")
-##COVID DoG index and impact
+# COVID DoG index and impact
 ggscatter(omit_df, x = "COVID_DoG_index", y = "Impacts_index", 
           add = "reg.line", conf.int = TRUE, 
           cor.coef = TRUE, cor.method = "pearson",
           xlab = "Partipcants'Average COVID Delay of Gratification ", ylab = "Partipcants' average impact from COVID19")
 
-##COVID DoG index and Experiences
+# COVID DoG index and Experiences
 ggscatter(omit_df, x = "COVID_DoG_index", y = "Experiences_index", 
           add = "reg.line", conf.int = TRUE, 
           cor.coef = TRUE, cor.method = "pearson",
           xlab = "Partipcants'Average COVID Delay of Gratification ", ylab = "Partipcants' average expereince from COVID19")
 
-##COVID DoG index and stress_index
+# COVID DoG index and stress_index
 ggscatter(omit_df, x = "COVID_DoG_index", y = "Stress_index", 
           add = "reg.line", conf.int = TRUE, 
           cor.coef = TRUE, cor.method = "pearson",
-          xlab = "Partipcants'Average COVID Delay of Gratification ", ylab = "Partipcants' average stress about COVID19")
+          xlab = "Partipcants' Average COVID Delay of Gratification ", ylab = "Partipcants' average stress about COVID19")
 
 ```
+## Screwing around with LM
+```{r}
 
-## Task Analyses ##
+COVIDDoG.norms.lm <- lm(COVID_DoG_index ~ Norms_index + Stress_index, data = omit_df)
+
+summary(COVIDDoG.norms.lm)
+
+
+```
+## Task Analyses 
 # COVID DoG and Perceived Risk/Value
 ```{r}
 hist(omit_df$socialgatherings_index)
@@ -534,4 +534,16 @@ summary(rowMeans(traveling_units))
 # normality assumption
 shapiro.test(omit_df$GCS_Sum)  #pvalue = 0.011 (>.05), yes normally distributed
 
+```
+
+# MISC SECTION #
+
+## Exploratory Factor Analysis for COVID DoG
+# Creates csv of the df dataset AND csv with just the 6 questions (using transformed data with units in days) of COVID_DoG
+# Used by Winnie to do EFA separately, see EFA_Analysis Doc in 3C repo
+```{r}
+write.csv(df, 'df.csv')
+COVID_DoG <- data.frame(df$COVID_DoG_Questions.1,df$COVID_DoG_Questions.2,df$COVID_DoG_Questions.3,df$COVID_DoG_Questions.4, df$COVID_DoG_Questions.5, df$COVID_DoG_Questions.6)
+COVID_DoG
+write.csv(COVID_DoG, 'COVID_DoG.csv')
 ```
