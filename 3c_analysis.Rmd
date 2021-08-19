@@ -263,11 +263,28 @@ omit_df <- omit_df %>% mutate(PercevedValue_index = rowMeans(mini_df),
 
 # Social Norms (Mean)
 ```{r}
+
+# Social Norm Index across three factors   
+
 mini_df <- omit_df %>% select(SocialNorms_Family_1:SocialNorms_Stranger_3)
 omit_df <- omit_df %>% mutate(Norms_index = rowMeans(mini_df),
                               .before = PerceivedRisk_1)
+#family norms index
 
-hist(omit_df$Norms_index, breaks = 50) 
+mini_df <- omit_df %>% select(SocialNorms_Family_1:SocialNorms_Family_3)
+omit_df <- omit_df %>% mutate(FamilyNorm_index = rowMeans(mini_df), 
+                              .before = PerceivedRisk_1)
+
+#friends norm index
+
+mini_df <- omit_df %>% select(SocialNorms_Friends_1:SocialNorms_Friends_3)
+omit_df <- omit_df %>% mutate(FriendsNorm_index = rowMeans(mini_df), 
+                              .before = PerceivedRisk_1)
+
+#strangers norm index
+mini_df <- omit_df %>% select(SocialNorms_Stranger_1:SocialNorms_Stranger_3)
+omit_df <- omit_df %>% mutate(StrangerNorm_index = rowMeans(mini_df), 
+                              .before = PerceivedRisk_1)
 
 ```
 
@@ -280,29 +297,38 @@ mini_df <- omit_df %>% select(contains("GCS"))
 omit_df <- omit_df %>% mutate(GCS_index = rowMeans(mini_df),
                               .before = IUS_1)
 
-hist(omit_df$GCS_index, breaks = 50) 
-
 ```
 
-# Intolerance of Uncertainty (sum score, with one factor, or two factors (1-7 for prospective anexity + 8-12 for inhibitory anexity))
+# Intolerance of Uncertainty (sum score, 3 indices)
 ```{r}
 mini_df <- omit_df %>% select(IUS_1:IUS_12)
 omit_df <- omit_df %>% mutate(IUS_Sum = rowSums(mini_df), 
                               .before = MFQpart1_1)
 
-hist(omit_df$IUS_index, breaks = 50) 
+mini_df <- omit_df %>% select(IUS_1:IUS_7)
+omit_df <- omit_df %>% mutate(IUS_ProspectiveAnexity_index = rowSums(mini_df),
+                              .before = MFQpart1_1)
+
+mini_df <- omit_df %>% select(IUS_8:IUS_12)
+omit_df <- omit_df %>% mutate(IUS_inhibitory_anexity_index = rowSums(mini_df),
+                              .before = MFQpart1_1)
 
 ```
 
 # Political Orientation ( Measure 2 with means for each predictor, Measure 5 with means across the two factors)
 ```{r}
-# measure 2
-mini_df <- omit_df %>% select(Measure2_2:Measure2_4)
-omit_df <- omit_df %>% mutate(Measure2_PO_Sum = rowSums(mini_df), 
+# measure 2 indices
+mini_df <- omit_df %>% select(Measure2_2)
+omit_df <- omit_df %>% mutate(Measure2_lib_Index = rowMeans(mini_df), 
                               .before = Measure5_1)
-omit_df <- omit_df %>% mutate(Measure2_PO_index = rowMeans(mini_df),
+mini_df <- omit_df %>% select(Measure2_3)
+omit_df <- omit_df %>% mutate(Measure2_cons_Index = rowMeans(mini_df), 
                               .before = Measure5_1)
-# measure 5
+mini_df <- omit_df %>% select(Measure2_4)
+omit_df <- omit_df %>% mutate(Measure2_lib_Index = rowMeans(mini_df), 
+                              .before = Measure5_1)
+
+# measure 5 indices
 mini_df <- omit_df %>% select(Measure5_1:Measure5_14)
 omit_df <- omit_df %>% mutate(Measure5_PO_Sum = rowSums(mini_df))
 omit_df <- omit_df %>% mutate(Measure5_PO_index = rowMeans(mini_df))
@@ -335,17 +361,58 @@ omit_df <- omit_df %>% mutate(MFQtotal_index = rowMeans(MFQ_total),
                               .before = Disgust_1)
 ```
 
-# COVID Stress (Mean across all three portions and three seperate)
+# COVID Stress (Mean across all five portions and five seperate)
 ```{r}
+
+#mini_df <- omit_df %>% select(COVID_DoG_Questions.1:COVID_DoG_Questions.6)
+#omit_df <- omit_df %>% mutate(COVID_DoG_Sum = rowSums(mini_df), .before = PandemicLengthExpect.1)
+
+
+# make index of delaying across all 6 questions (average delaying across categories)
+#omit_df <- omit_df %>% mutate(COVID_DoG_index = rowMeans(mini_df), 
+                              #.before = PandemicLengthExpect.1)
+
+#create 1 index across social situations/gatherings
+#mini_df <- omit_df %>% select(COVID_DoG_Questions.1:COVID_DoG_Questions.3)
+#omit_df <- omit_df %>% mutate(socialgatherings_index = rowMeans(mini_df),
+                              #.before = PandemicLengthExpect.1)
+#create 1 index across traveling
+#mini_df <- omit_df %>% select(COVID_DoG_Questions.4:COVID_DoG_Questions.6)
+#omit_df <- omit_df %>% mutate(traveling_index = rowMeans(mini_df), 
+                              #.before = PandemicLengthExpect.1)
+
+#Stress Scale Indice 
+
 mini_df <- omit_df %>% select(contains("Worries") | contains("Problems") | contains("Checking"))
-#mini_df
 omit_df <- omit_df %>% mutate(Stress_index = rowMeans(mini_df),
                               .before = Impacts_financial1)
+#Stress Scale, Sub Indice COVID danger and contamination fears
 
-hist(omit_df$Stress_index, breaks = 50) 
+mini_df <- omit_df %>% select(Worries_1:Worries_6)
+omit_df <- omit_df %>% mutate(COVIDDanger_ContFears_index = rowMeans(mini_df),
+                              .before = Impacts_financial1)
+#Stress Scale, Sub Indice COVID fears about economic consequences
 
-#whats going on here?  Why is it graphing like this?
+mini_df <- omit_df %>% select(Worries_7:Worries_12)
+omit_df <- omit_df %>% mutate(COVID_econ_fears_index = rowMeans(mini_df),
+                              .before = Impacts_financial1)
+#Stress Scale, Sub Indice COVID xenophobia
 
+mini_df <- omit_df %>% select(Worries_13:Worries_18)
+omit_df <- omit_df %>% mutate(COVID_xenophobia = rowMeans(mini_df),
+                              .before = Impacts_financial1)
+
+#Stress Scale,Sub indice COVID compulsive checking and reassurance seeking 
+
+mini_df <- omit_df %>% select(Worries_19:Worries_24,CheckingBeh_1:CheckingBeh_6)
+omit_df <- omit_df %>% mutate(COVID_checking = rowMeans(mini_df),
+                              .before = Impacts_financial1)
+
+#Stress Scale, Sub Indice COVID traumatic stress symptoms
+mini_df <- omit_df %>% select(Problems_1:Problems_6)
+omit_df <- omit_df %>% mutate(COVID_traumatic_stress = rowMeans(mini_df),
+                              .before = Impacts_financial1)
+                              
 ```
 
 # COVID Impacts and Experiences (Ipmacts calculated as a mean, Expereinces TBD)
@@ -358,13 +425,25 @@ omit_df <- omit_df %>% mutate(Experiences_index = rowMeans(Experiences),
                               .before = Age)
 ```
 
-# Disgust (Mean Index)
+# Disgust (Mean Index across three sub indice)
 ```{r}
-mini_df <- omit_df %>% select(Disgust_1:Disgust_21)
-omit_df <- omit_df %>% mutate(Disgust_index = rowMeans(mini_df), 
+#Pathogen Indice 
+
+mini_df <- omit_df %>% select(Disgust_3, Disgust_6, Disgust_9, Disgust_12, Disgust_15, Disgust_18, Disgust_21)
+omit_df <- omit_df %>% mutate(Pathogen_Disgust_index = rowMeans(mini_df), 
                               .before = SDRS.5_Q1)
 
+#Sexual Indice 
 
+mini_df <- omit_df %>% select(Disgust_2, Disgust_5, Disgust_8, Disgust_11, Disgust_14, Disgust_17, Disgust_20)
+omit_df <- omit_df %>% mutate(Sexual_Disgust_index = rowMeans(mini_df), 
+                              .before = SDRS.5_Q1)
+
+#Moral Indice 
+
+mini_df <- omit_df %>% select(Disgust_1, Disgust_4, Disgust_7, Disgust_10, Disgust_13, Disgust_16, Disgust_19 )
+omit_df <- omit_df %>% mutate(Moral_Disgust_index = rowMeans(mini_df), 
+                              .before = SDRS.5_Q1)
 ```
 
 # Social Desirability (transformed sum)
