@@ -290,10 +290,12 @@ omit_df <- omit_df %>% mutate(StrangerNorm_index = rowMeans(mini_df),
 
 # General Confidence (sum score)
 ```{r}
+
+#re-coding reverse coded variables
+mini_df <- omit_df %>% select(GCS_5)
+omit_df <- omit_df %>% mutate(GCS_5 = 7 - GCS_5)
+
 mini_df <- omit_df %>% select(contains("GCS"))
-#mini_df
-#omit_df <- omit_df %>% mutate(GCS_Sum = rowSums(mini_df), .before = IUS_1)
-#view(omit_df)
 omit_df <- omit_df %>% mutate(GCS_index = rowMeans(mini_df),
                               .before = IUS_1)
 
@@ -329,59 +331,69 @@ omit_df <- omit_df %>% mutate(Measure2_lib_Index = rowMeans(mini_df),
                               .before = Measure5_1)
 
 # measure 5 indices
+
+#re-coding reverse coded variables
+mini_df <- omit_df %>% select(Measure5_1, Measure5_7)
+omit_df <- omit_df %>% mutate(Measure5_1 = 100 - Measure5_1)
+omit_df <- omit_df %>% mutate(Measure5_7 = 100 - Measure5_7)
+
+#indice across both scales
+
 mini_df <- omit_df %>% select(Measure5_1:Measure5_14)
-omit_df <- omit_df %>% mutate(Measure5_PO_Sum = rowSums(mini_df))
-omit_df <- omit_df %>% mutate(Measure5_PO_index = rowMeans(mini_df))
-#combining both measures
-mini_df <- omit_df %>% select(contains("PO_Sum"))
-#mini_df
-omit_df <- omit_df %>% mutate(PO_Total_Sum = rowSums(mini_df))
-mini_df <- omit_df %>% select(contains("PO_index"))
-omit_df <- omit_df %>% mutate(PO_total_index = rowMeans(mini_df))
+omit_df <- omit_df %>% mutate(Measure5_SECS_Index = rowMeans(mini_df), 
+                              .before = logCOVID_DoG_index)
+#social indice
+
+mini_df <- omit_df %>% select(Measure5_1,Measure5_5, Measure5_6, Measure5_9, Measure5_10, Measure5_13, Measure5_14)
+omit_df <- omit_df %>% mutate(Measure5_Social_Index = rowMeans(mini_df), 
+                              .before = logCOVID_DoG_index)
+
+#political indice
+
+mini_df <- omit_df %>% select(Measure5_4, Measure5_7, Measure5_8, Measure5_11, Measure5_12)
+omit_df <- omit_df %>% mutate(Measure5_Political_Index = rowMeans(mini_df), 
+                              .before = logCOVID_DoG_index)
+
 ```
 
 # MFQ (5 Factor Index)
 ```{r}
-MFQ_part1 <- omit_df %>% select(MFQpart1_1:MFQpart1_16)
-MFQ_part2 <- omit_df %>% select(MFQ_part2_1:MFQ_part2_16)
-omit_df <- omit_df %>% mutate(MFQ_sum_part1 = rowSums(MFQ_part1), 
-                              .before = MFQ_part2_1)
-omit_df <- omit_df %>% mutate(MFQ_sum_part2 = rowSums(MFQ_part2), 
+
+#harm foundation MFQpart1_1,MFQpart1_7, MFQpart1_12, MFQpart2_1, MFQpart2_7, MFQpart2_12
+
+mini_df <- omit_df %>% select(MFQpart1_1,MFQpart1_7, MFQpart1_12, MFQ_part2_1, MFQ_part2_7, MFQ_part2_12)
+omit_df <- omit_df %>% mutate(harm_foundation = rowMeans(mini_df), 
                               .before = Disgust_1)
-omit_df <- omit_df %>% mutate(MFQpart1_index = rowMeans(MFQ_part1), 
-                              .before = MFQ_part2_1)
-omit_df <- omit_df %>% mutate(MFQpart2_index = rowMeans(MFQ_part2), 
+
+#fairness foundation MFQpart1_2, MFQpart1_8, MFQpart1_13, MFQpart2_2, MFQpart2_8, MFQpart2_13
+
+mini_df <- omit_df %>% select(MFQpart1_2, MFQpart1_8, MFQpart1_13, MFQ_part2_2, MFQ_part2_8, MFQ_part2_13)
+omit_df <- omit_df %>% mutate(fairness_foundation = rowMeans(mini_df), 
                               .before = Disgust_1)
-#view(omit_df)
-MFQ_total <- omit_df %>% select(contains("MFQ_sum"))
-#MFQ_total
-omit_df <- omit_df %>% mutate(MFQ_total_sum = rowSums(MFQ_total), 
+
+#ingroup foundation MFQpart1_3, MFQpart1_9, MFQpart1_14, MFQpart2_3, MFQpart2_9, MFQpart2_14
+
+mini_df <- omit_df %>% select(MFQpart1_3, MFQpart1_9, MFQpart1_14, MFQ_part2_3, MFQ_part2_9, MFQ_part2_14)
+omit_df <- omit_df %>% mutate(ingroup_foundation = rowMeans(mini_df), 
                               .before = Disgust_1)
-omit_df <- omit_df %>% mutate(MFQtotal_index = rowMeans(MFQ_total),
+
+#authoirty foundation MFQpart1_4, MFQpart1_10, MFQpart1_15, MFQpart2_4, MFQpart2_10, MFQpart2_15
+
+mini_df <- omit_df %>% select(MFQpart1_4, MFQpart1_10, MFQpart1_15, MFQ_part2_4, MFQ_part2_10, MFQ_part2_15)
+omit_df <- omit_df %>% mutate(authority_foundation = rowMeans(mini_df), 
                               .before = Disgust_1)
+
+#purity foundation MFQpart1_5, MFQpart1_11, MFQpart1_16, MFQpart2_16, MFQpart2_11, MFQpart2_5
+
+mini_df <- omit_df %>% select(MFQpart1_5, MFQpart1_11, MFQpart1_16, MFQ_part2_16, MFQ_part2_11, MFQ_part2_5)
+omit_df <- omit_df %>% mutate(purity_foundation = rowMeans(mini_df), 
+                              .before = Disgust_1)
+
 ```
 
 # COVID Stress (Mean across all five portions and five seperate)
 ```{r}
-
-#mini_df <- omit_df %>% select(COVID_DoG_Questions.1:COVID_DoG_Questions.6)
-#omit_df <- omit_df %>% mutate(COVID_DoG_Sum = rowSums(mini_df), .before = PandemicLengthExpect.1)
-
-
-# make index of delaying across all 6 questions (average delaying across categories)
-#omit_df <- omit_df %>% mutate(COVID_DoG_index = rowMeans(mini_df), 
-                              #.before = PandemicLengthExpect.1)
-
-#create 1 index across social situations/gatherings
-#mini_df <- omit_df %>% select(COVID_DoG_Questions.1:COVID_DoG_Questions.3)
-#omit_df <- omit_df %>% mutate(socialgatherings_index = rowMeans(mini_df),
-                              #.before = PandemicLengthExpect.1)
-#create 1 index across traveling
-#mini_df <- omit_df %>% select(COVID_DoG_Questions.4:COVID_DoG_Questions.6)
-#omit_df <- omit_df %>% mutate(traveling_index = rowMeans(mini_df), 
-                              #.before = PandemicLengthExpect.1)
-
-#Stress Scale Indice 
+#Stress Scale Main Indice 
 
 mini_df <- omit_df %>% select(contains("Worries") | contains("Problems") | contains("Checking"))
 omit_df <- omit_df %>% mutate(Stress_index = rowMeans(mini_df),
@@ -402,7 +414,7 @@ mini_df <- omit_df %>% select(Worries_13:Worries_18)
 omit_df <- omit_df %>% mutate(COVID_xenophobia = rowMeans(mini_df),
                               .before = Impacts_financial1)
 
-#Stress Scale,Sub indice COVID compulsive checking and reassurance seeking 
+#Stress Scale, Sub indice COVID compulsive checking and reassurance seeking 
 
 mini_df <- omit_df %>% select(Worries_19:Worries_24,CheckingBeh_1:CheckingBeh_6)
 omit_df <- omit_df %>% mutate(COVID_checking = rowMeans(mini_df),
@@ -451,8 +463,7 @@ omit_df <- omit_df %>% mutate(Moral_Disgust_index = rowMeans(mini_df),
 mini_df <- omit_df %>% select(SDRS.5_Q1:SDRS.5_Q5)
 omit_df <- omit_df %>% mutate(SDRS_Sum = rowSums(mini_df), 
                               .before = Worries_1)
-omit_df <- omit_df %>% mutate(SDRS_index = rowMeans(mini_df), 
-                              .before = Worries_1)
+
 #view(omit_df)
 ```
 
@@ -464,7 +475,7 @@ summary(omit_df$PandemicLengthExpect.1)
 describe(omit_df$COVID_DoG_Sum)
 describe(omit_df$COVID_DoG_index)
 describe(omit_df$MCQ_Sum)
-describe(omit_df$Norms_Sum)
+#describe(omit_df$Norms_Sum)
 describe(omit_df$GCS_Sum)
 describe(omit_df$IUS_Sum)
 describe(omit_df$MFQ_sum_part1)
@@ -568,15 +579,7 @@ ggscatter(omit_df, x = "COVID_DoG_index", y = "Stress_index",
           xlab = "Partipcants' Average COVID Delay of Gratification ", ylab = "Partipcants' average stress about COVID19")
 
 ```
-## Screwing around with LM
-```{r}
 
-COVIDDoG.norms.lm <- lm(COVID_DoG_index ~ Norms_index + Stress_index, data = omit_df)
-
-summary(COVIDDoG.norms.lm)
-
-
-```
 ## Task Analyses 
 # COVID DoG and Perceived Risk/Value
 ```{r}
@@ -612,6 +615,34 @@ summary(rowMeans(traveling_units))
 ```{r}
 # normality assumption
 shapiro.test(omit_df$GCS_Sum)  #pvalue = 0.011 (>.05), yes normally distributed
+
+```
+
+## Linear Regressions
+#Moral Foundations and Delaying
+```{r}
+
+MFTModel <- lm(COVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation, data = omit_df)
+               
+summary(MFTModel) 
+
+```
+#Disgust and delaying 
+```{r}
+
+DisgustModel <- lm(COVID_DoG_index ~ Pathogen_Disgust_index + Moral_Disgust_index + Sexual_Disgust_index, data = omit_df)
+               
+summary(DisgustModel) 
+
+```
+
+#Norms, Stress, and Delaying
+```{r}
+
+COVIDDoG.norms.lm <- lm(COVID_DoG_index ~ Norms_index + Stress_index, data = omit_df)
+
+summary(COVIDDoG.norms.lm)
+
 
 ```
 
