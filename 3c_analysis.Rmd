@@ -14,8 +14,16 @@ library(psych)
 library(tidyverse)
 library(ggplot2)
 library(scales)
+install.packages("Hmisc")
 install.packages("lmtest")
+install.packages("jtools")
+install.packages("interactions")
+install.packages("lm.beta")
+library(jtools)
+library(interactions)
+library(lm.beta)
 library(lmtest)
+library(Hmisc)
 #library(dplyr)
 #library(plyr)
 ```
@@ -277,6 +285,65 @@ hist(omit_df$logPandemicLengthExpect.1, breaks = 50)
 
 # MCQ (specfic analysis)
 ```{r}
+#Create MCQ DF
+MCQdata <- data.frame(omit_df$MCQ_1, omit_df$MCQ_2, omit_df$MCQ_3, omit_df$MCQ_4, omit_df$MCQ_5, omit_df$MCQ_6, omit_df$MCQ_7, omit_df$MCQ_8, omit_df$MCQ_9, omit_df$MCQ_10, omit_df$MCQ_11, omit_df$MCQ_12, omit_df$MCQ_13, omit_df$MCQ_13, omit_df$MCQ_14, omit_df$MCQ_15, omit_df$MCQ_16, omit_df$MCQ_17, omit_df$MCQ_18, omit_df$MCQ_19, omit_df$MCQ_20, omit_df$MCQ_21, omit_df$MCQ_22, omit_df$MCQ_23, omit_df$MCQ_24, omit_df$MCQ_25, omit_df$MCQ_26, omit_df$MCQ_27)
+
+# load lookup tables
+lookup1 <- read.table("lookup1MCQ.txt", header = TRUE)
+lookup2 <- read.table("lookup2MCQ.txt", header = TRUE)
+lookup3 <- read.table("lookup3MCQ.txt", header = TRUE)
+
+#Calculate unique value for each sequence of responses
+MCQdata$omit_df.MCQ_13 <- MCQdata$omit_df.MCQ_13*1
+MCQdata$omit_df.MCQ_20 <- MCQdata$omit_df.MCQ_20*2
+MCQdata$omit_df.MCQ_26 <- MCQdata$omit_df.MCQ_26*4
+MCQdata$omit_df.MCQ_22 <- MCQdata$omit_df.MCQ_22*8
+MCQdata$omit_df.MCQ_3 <- MCQdata$omit_df.MCQ_3*16
+MCQdata$omit_df.MCQ_18 <- MCQdata$omit_df.MCQ_18*32
+MCQdata$omit_df.MCQ_5 <- MCQdata$omit_df.MCQ_5*64
+MCQdata$omit_df.MCQ_7 <- MCQdata$omit_df.MCQ_7*128
+MCQdata$omit_df.MCQ_11 <- MCQdata$omit_df.MCQ_11*256
+MCQdata$SmlSeq <- with (MCQdata, omit_df.MCQ_13+omit_df.MCQ_20+omit_df.MCQ_26+omit_df.MCQ_22+omit_df.MCQ_3+omit_df.MCQ_18+omit_df.MCQ_5+omit_df.MCQ_7+omit_df.MCQ_11-510)
+
+MCQdata$omit_df.MCQ_1 <- MCQdata$omit_df.MCQ_1*1
+MCQdata$omit_df.MCQ_6 <- MCQdata$omit_df.MCQ_6*2
+MCQdata$omit_df.MCQ_24 <- MCQdata$omit_df.MCQ_24*4
+MCQdata$omit_df.MCQ_16 <- MCQdata$omit_df.MCQ_16*8
+MCQdata$omit_df.MCQ_10 <- MCQdata$omit_df.MCQ_10*16
+MCQdata$omit_df.MCQ_21 <- MCQdata$omit_df.MCQ_21*32
+MCQdata$omit_df.MCQ_14 <- MCQdata$omit_df.MCQ_14*64
+MCQdata$omit_df.MCQ_8 <- MCQdata$omit_df.MCQ_8*128
+MCQdata$omit_df.MCQ_27 <- MCQdata$omit_df.MCQ_27*256
+MCQdata$MedSeq <- with (MCQdata, omit_df.MCQ_1+omit_df.MCQ_6+omit_df.MCQ_24+omit_df.MCQ_16+omit_df.MCQ_10+omit_df.MCQ_21+omit_df.MCQ_14+omit_df.MCQ_8+omit_df.MCQ_27-510)
+
+MCQdata$omit_df.MCQ_9 <- MCQdata$omit_df.MCQ_9*1
+MCQdata$omit_df.MCQ_17 <- MCQdata$omit_df.MCQ_17*2
+MCQdata$omit_df.MCQ_12 <- MCQdata$omit_df.MCQ_12*4
+MCQdata$omit_df.MCQ_15 <- MCQdata$omit_df.MCQ_15*8
+MCQdata$omit_df.MCQ_2 <- MCQdata$omit_df.MCQ_2*16
+MCQdata$omit_df.MCQ_25 <- MCQdata$omit_df.MCQ_25*32
+MCQdata$omit_df.MCQ_23 <- MCQdata$omit_df.MCQ_23*64
+MCQdata$omit_df.MCQ_19 <- MCQdata$omit_df.MCQ_19*128
+MCQdata$omit_df.MCQ_4 <- MCQdata$omit_df.MCQ_4*256
+MCQdata$LrgSeq <- with (MCQdata, omit_df.MCQ_9+omit_df.MCQ_17+omit_df.MCQ_12+omit_df.MCQ_15+omit_df.MCQ_2+omit_df.MCQ_25+omit_df.MCQ_23+omit_df.MCQ_19+omit_df.MCQ_4-510)
+
+#Remove unwanted columns
+MCQdata[1:28] <- list(NULL)
+
+#Maintain row order
+MCQdata$id <- 1:nrow(MCQdata)
+
+#Merge in MCQindices from lookup table
+MCQdata <- (merge(lookup1, MCQdata, by = 'SmlSeq'))
+MCQdata <- (merge(lookup2, MCQdata, by = 'MedSeq'))
+MCQdata <- (merge(lookup3, MCQdata, by = 'LrgSeq'))
+
+#Return to the original order of rows
+MCQdata <- MCQdata[order(MCQdata$id),]
+head(MCQdata)
+
+#Arrange columns in ideal order
+MCQdata <- MCQdata[c(13,9,10,11,12,5,6,7,8,1,2,3,4)]
 ```
 
 # Perceived COVID DoG Risk and Value
@@ -628,76 +695,24 @@ ggscatter(omit_df, x = "traveling_index", y = "socialgatherings_index",
           add = "reg.line", conf.int = TRUE, 
           cor.coef = TRUE, cor.method = "pearson",
           xlab = "traveling index ", ylab = "social gathering index")
-# COVID DoG index and impact
-ggscatter(omit_df, x = "COVID_DoG_index", y = "Impacts_index", 
-          add = "reg.line", conf.int = TRUE, 
-          cor.coef = TRUE, cor.method = "pearson",
-          xlab = "Partipcants'Average COVID Delay of Gratification ", ylab = "Partipcants' average impact from COVID19")
+#COVID DoG Item Correlations  
+  
+COVID_DoG <- data.frame(df$COVID_DoG_Questions.1,df$COVID_DoG_Questions.2,df$COVID_DoG_Questions.3,df$COVID_DoG_Questions.4, df$COVID_DoG_Questions.5, df$COVID_DoG_Questions.6)
 
-# COVID DoG index and Experiences
-ggscatter(omit_df, x = "COVID_DoG_index", y = "Experiences_index", 
-          add = "reg.line", conf.int = TRUE, 
-          cor.coef = TRUE, cor.method = "pearson",
-          xlab = "Partipcants'Average COVID Delay of Gratification ", ylab = "Partipcants' average expereince from COVID19")
+COVID_DoG_table <- rcorr(as.matrix(COVID_DoG))  
 
-# COVID DoG index and stress_index
-ggscatter(omit_df, x = "COVID_DoG_index", y = "Stress_index", 
-          add = "reg.line", conf.int = TRUE, 
-          cor.coef = TRUE, cor.method = "pearson",
-          xlab = "Partipcants' Average COVID Delay of Gratification ", ylab = "Partipcants' average stress about COVID19")
-
-#COVID DoG Index and Social Conservatism
-
-ggscatter(omit_df, x = "COVID_DoG_index", y = "Measure5_Social_Index", 
-          add = "reg.line", conf.int = TRUE, 
-          cor.coef = TRUE, cor.method = "pearson",
-          xlab = "Partipcants' Average COVID Delay of Gratification ", ylab = "Social Conservativsm")
-
-#COVID DoG Index and Political Conservatism
-
-ggscatter(omit_df, x = "COVID_DoG_index", y = "Measure5_Political_Index", 
-          add = "reg.line", conf.int = TRUE, 
-          cor.coef = TRUE, cor.method = "pearson",
-          xlab = "Partipcants' Average COVID Delay of Gratification ", ylab = "Political Conservatism ")
-
-ggscatter(omit_df, x = "COVID_DoG_index", y = "Stress_index", 
-          add = "reg.line", conf.int = TRUE, 
-          cor.coef = TRUE, cor.method = "pearson",
-          xlab = "Partipcants' Average COVID Delay of Gratification ", ylab = "Conservative Political Oreintation ")
-
-# COVID DoG Index and Political Orientation, Liberal  
-
-ggscatter(omit_df, x = "COVID_DoG_index", y = "Stress_index", 
-          add = "reg.line", conf.int = TRUE, 
-          cor.coef = TRUE, cor.method = "pearson",
-          xlab = "Partipcants' Average COVID Delay of Gratification ", ylab = "Liberal Political Oreintation ")
-
-# COVID DoG Index and Political Orientation, Conservative  
-
-ggscatter(omit_df, x = "COVID_DoG_index", y = "Stress_index", 
-          add = "reg.line", conf.int = TRUE, 
-          cor.coef = TRUE, cor.method = "pearson",
-          xlab = "Partipcants' Average COVID Delay of Gratification ", ylab = "Conservative Political Oreintation ")
+COVID_DoG_table
 
 
-# COVID DoG Index and Political Orientation, Independent 
 
-ggscatter(omit_df, x = "COVID_DoG_index", y = "Stress_index", 
-          add = "reg.line", conf.int = TRUE, 
-          cor.coef = TRUE, cor.method = "pearson",
-          xlab = "Partipcants' Average COVID Delay of Gratification ", ylab = "Independent Political Oreintation ")
+
+
 
 
 ```
 
 ## Task Analyses 
-# COVID DoG and Perceived Risk/Value
-```{r}
-hist(omit_df$socialgatherings_index)
-summary(omit_df$socialgatherings_index)
-hist(omit_df$traveling_index)
-summary(omit_df$traveling_index)
-```
+
 
 ## Linear Regressions + comparing data 
 #Moral Foundations and Delaying and comparing data as is and transfromed data
@@ -901,7 +916,10 @@ summary(NormsModel5)
 plot(NormsModel5)
 plot(NormsModel2)
 
-#Looks a lot better visually.. 
+#Looks a lot better visually..  What about the test?
+
+bptest(NormsModel5)
+
 
 ```
 #Norms and Political Oreintation
@@ -1102,6 +1120,12 @@ plot(COVIDExpereince)
 
 #4 No dots outside of cooks line. good! 
 
+#Does COVID Stress moderate the Conservative COVID DoG relationship?
+
+COVIDStress_Moderation <- lm(logCOVID_DoG_index ~ Stress_index+ Measure2_cons_Index + Measure2_cons_Index*Stress_index, data = omit_df)
+
+summary(COVIDStress_Moderation)
+
 ```
 # MISC SECTION #
 
@@ -1110,7 +1134,5 @@ plot(COVIDExpereince)
 # Used by Winnie to do EFA separately, see EFA_Analysis Doc in 3C repo
 ```{r}
 write.csv(df, 'df.csv')
-COVID_DoG <- data.frame(df$COVID_DoG_Questions.1,df$COVID_DoG_Questions.2,df$COVID_DoG_Questions.3,df$COVID_DoG_Questions.4, df$COVID_DoG_Questions.5, df$COVID_DoG_Questions.6)
-COVID_DoG
 write.csv(COVID_DoG, 'COVID_DoG.csv')
 ```
