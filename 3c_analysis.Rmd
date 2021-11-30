@@ -14,17 +14,21 @@ library(psych)
 library(tidyverse)
 library(ggplot2)
 library(scales)
-install.packages("Hmisc")
-install.packages("lmtest")
-install.packages("jtools")
-install.packages("interactions")
-install.packages("lm.beta")
+#install.packages("Hmisc")
+#install.packages("lmtest")
+#install.packages("jtools")
+#install.packages("interactions")
+#install.packages("lm.beta")
+#install.packages("car")
+#install.packages("sandwich")
+library(sandwich)
+library(car)
 library(jtools)
 library(interactions)
 library(lm.beta)
 library(lmtest)
 library(Hmisc)
-#library(dplyr)
+library(dplyr)
 #library(plyr)
 ```
 # PROCESSING and PRE-ANALYSIS SECTION # 
@@ -33,8 +37,8 @@ library(Hmisc)
 ```{r}
 df <- read.csv("3C_Live_Study_Data.csv", header=T, na.strings="")
 
+
 #442 total participants 
-#413 participants completed the entire study, 29 did not. 
 
 ## Drop unneeded rows (pilot data, incomplete trials, remove entries that are shorter than 6 mins longer than 60 minutes) & cols
 unneeded_cols <- c("StartDate", "EndDate", "Status", "IPAddress", "Progress", "Finished", "RecordedDate", "ResponseId", "RecipientLastName", "RecipientFirstName", "RecipientEmail", "ExternalReference", "LocationLatitude", "LocationLongitude", "DistributionChannel", "UserLanguage", "Gender_4_TEXT...Parent.Topics", "Gender_4_TEXT...Sentiment.Polarity", "Gender_4_TEXT...Sentiment.Score", "Gender_4_TEXT...Sentiment", "Gender_4_TEXT...Topics", "Gender_4_TEXT...Topic.Sentiment.Label", "Gender_4_TEXT...Topic.Sentiment.Score")
@@ -50,7 +54,7 @@ df[which(df$'Duration..in.seconds.' <= 360), ]   # 29 entries, 8,9,10, 11, 12, 1
 # remove Gender and Race open response columns to be able to remove rows with missing values
 NAcols <- c("Gender_4_TEXT", "Race_6_TEXT")
 
-# Exclude folks who took longer than 45 mins or were shorter than 6 mins, un-needed columns, and DoG and Pandemic Expextation outliers (see lines 145 for exclusion criteria calcuations. DoG and Expextation Outliers removed here because of not able to do it below. )
+# Exclude folks who took longer than 45 mins or were shorter than 6 mins and un-needed columns
 
 #exclude remaining folks progress less than 100 percent 
 
@@ -58,12 +62,14 @@ df[which(df$'Progress' <= 100), ]
 
 # Remove all the folks who meet the criteria stated above 
 
-df <- df[-c(1,2,8:12,14,22,23,118,176,191,205,222,255,243,252,270,323,324,331,350,364,392,394,415:444,423,424,426,426,429,432:434,436,439,443,444), ]
+#df <- df[-c(1,2,8:12,14,22,23,118,176,191,205,222,255,243,252,270,323,324,331,350,364,392,394,415:444,423,424,426,426,429,432:434,436,439,443,444), ]
+
+df <- df[-c(1,2,8:12,14,22,205,222,255,324,394,410,415:421,423,424,426,429,432:434,436,439,443,444), ]
 
 df <- df[ , !names(df) %in% unneeded_cols]
 df <- df[ , !names(df) %in% NAcols]
 
-#388 participants are now left out of the original 442
+#411 participants are now left out of the original 442
 
 ```
 
@@ -135,7 +141,7 @@ view(df)
 df[!complete.cases(df), ]   #6 entries
 ##create new dataset with no missing values
 omit_df <- na.omit(df)
-nrow(omit_df) #391
+nrow(omit_df) #393
 #view(omit_df)
 sum(is.na(omit_df))
 
@@ -164,6 +170,7 @@ which(omit_df == 1971, arr.ind=TRUE)
 # row = 231, col = 202
 omit_df[231,202] = 2021-1971
 
+omit_df <- mutate(omit_df, id = rownames(omit_df))
 
 ```
 
@@ -188,7 +195,7 @@ omit_df <- omit_df %>% mutate(traveling_index = rowMeans(mini_df),
 
 ```
 
-# COVID DoG and Pandemic Expextation Outlier Exclusions 
+# Manual COVID DoG and Pandemic Expextation Outlier Identification and removal (currently inactive)
 ```{r}
 
 # COVID DoG Indice SD = 363.78
@@ -201,7 +208,7 @@ omit_df <- omit_df %>% mutate(traveling_index = rowMeans(mini_df),
 
 omit_df[which(omit_df$'COVID_DoG_index' >=  1433.28), ] #returns 7
 
-# Pandemic Expectation SD = 930.63
+# Pandemic Expectation SD = 930.6 
 
 ## 3 Standard Deviations above mean calculation 
 
@@ -211,15 +218,51 @@ omit_df[which(omit_df$'COVID_DoG_index' >=  1433.28), ] #returns 7
 
 omit_df[which(omit_df$'PandemicLengthExpect.1' >=  3486.55), ] #returns 5
 
+#omit_df <-omit_df[!(omit_df$id=="19" | omit_df$id=="20" |omit_df$id=="29" | omit_df$id=="25" | omit_df$id=="51" | omit_df$id=="54" | omit_df$id=="36" | omit_df$id=="61" | omit_df$id=="69" | omit_df$id=="119"| omit_df$id=="121"| omit_df$id=="142" ),]
+
 #See line 44 for exclusions
+```
+#automatic outlier work 
+##COVID DoG Indice
+```{r}
+
+#find Q1, Q3, and interquartile range for values in column A
+Q1 <- quantile(omit_df$COVID_DoG_index, .25)
+Q3 <- quantile(omit_df$COVID_DoG_index, .75)
+IQR <- IQR(omit_df$COVID_DoG_index)
+
+#only keep rows in dataframe that have values within 1.5*IQR of Q1 and Q3
+no_outliers <- subset(omit_df, omit_df$COVID_DoG_index > (Q1 - 1.5*IQR) & omit_df$COVID_DoG_index < (Q3 + 1.5*IQR))
+
+omit_df <- no_outliers 
+
+#omit_df now at 374 
+
+
+```
+#automatic outlier work 
+##Pandemic Expextation , activate if doing Pandemic Expextation work
+```{r}
+
+#find Q1, Q3, and interquartile range for values in column A
+#Q1 <- quantile(omit_df$PandemicLengthExpect.1, .25)
+#Q3 <- quantile(omit_df$PandemicLengthExpect.1, .75)
+#IQR <- IQR(omit_df$PandemicLengthExpect.1)
+
+#only keep rows in dataframe that have values within 1.5*IQR of Q1 and Q3
+#no_outliers <- subset(omit_df, omit_df$PandemicLengthExpect.1 > (Q1 - 1.5*IQR) & omit_df$PandemicLengthExpect.1 < (Q3 + 1.5*IQR))
+
+#omit_df <- no_outliers 
+
 ```
 
 # Attempt to normalize COVID DoG and Pandemic Length Expextation Data 
 ```{r}
 
-# Plot for COVID DoG index (average delaying across 6 scenarios for each participant)
+# Plot for COVID DoG index vs outlier free data (average delaying across 6 scenarios for each participant)
 summary(omit_df$COVID_DoG_index)
 hist(omit_df$COVID_DoG_index)
+
 
 # Plot for COVID DoG index, between the two indices
 
@@ -275,9 +318,6 @@ hist(omit_df$logPandemicLengthExpect.1, breaks = 50)
 
 
 #okay, how do things like when we use the transformed indicies? Go down to line 629
-
-
-
 
 ```
 
@@ -344,6 +384,94 @@ head(MCQdata)
 
 #Arrange columns in ideal order
 MCQdata <- MCQdata[c(13,9,10,11,12,5,6,7,8,1,2,3,4)]
+
+
+#add MCQ to omit_df
+
+omit_df <- omit_df %>%
+  add_column(SmlK = MCQdata$SmlK,
+             .after = "MCQ_27") 
+
+omit_df <- omit_df%>%
+  add_column(MedK = MCQdata$MedK,
+             .after = "MCQ_27") 
+
+omit_df <- omit_df %>%
+  add_column(LrgK = MCQdata$LrgK,
+             .after = "MCQ_27") 
+
+mini_df <- omit_df %>% select(LrgK, MedK, SmlK)
+omit_df <- omit_df %>% mutate(MeanK = rowMeans(mini_df),
+                              .before = MCQ_27)
+
+#add ICR to omit_df
+
+omit_df <- omit_df %>%
+  add_column(SmlICR = MCQdata$SmlICR,
+             .after = "MCQ_27") 
+
+omit_df <- omit_df%>%
+  add_column(MedICR = MCQdata$MedICR,
+             .after = "MCQ_27") 
+
+omit_df <- omit_df %>%
+  add_column(LrgICR = MCQdata$LrgICR,
+             .after = "MCQ_27") 
+
+mini_df <- omit_df %>% select(LrgICR, MedICR, SmlICR)
+omit_df <- omit_df %>% mutate(MeanICR = rowMeans(mini_df),
+                              .before = MCQ_27)
+
+#Let's look at the distribution of the K indices 
+
+hist(omit_df$SmlK)
+hist(omit_df$MedK)
+hist(omit_df$LrgK)
+hist(omit_df$MeanK)
+
+#We have some skewing, lets see what a log transformation does. 
+
+omit_df$logSmlK=log(omit_df$SmlK)
+omit_df$logMedK=log(omit_df$MedK)
+omit_df$logLrgK=log(omit_df$LrgK)
+omit_df$logMeanK=log(omit_df$MeanK)
+
+
+hist(omit_df$logSmlK)
+hist(omit_df$logMedK)
+hist(omit_df$logLrgK)
+hist(omit_df$logMeanK)
+
+
+#looks better! Let's add to the data frame 
+
+omit_df <- omit_df%>%
+  add_column(logSmlK = MCQdata$logSmlK,
+             .after = "MCQ_27") 
+
+
+omit_df <- omit_df%>%
+  add_column(logMedK = MCQdata$logMedK,
+             .after = "MCQ_27") 
+
+omit_df <- omit_df%>%
+  add_column(logLrgK = MCQdata$logLrgK,
+             .after = "MCQ_27") 
+
+omit_df <- omit_df%>%
+  add_column(logMeanK = omit_df$logMeanK,
+             .after = "MCQ_27") 
+
+
+
+
+#Let's look at the distribution of the ICR indices 
+
+hist(omit_df$SmlICR)
+hist(omit_df$MedICR)
+hist(omit_df$LrgICR)
+
+
 ```
 
 # Perceived COVID DoG Risk and Value
@@ -359,37 +487,6 @@ MCQdata <- MCQdata[c(13,9,10,11,12,5,6,7,8,1,2,3,4)]
                               #.before = GCS_1)
 #omit_df <- omit_df %>% mutate(PercevedValue_index = rowMeans(mini_df), 
                               #.before = GCS_1)
-
-#perceived risk means
-
-mean(omit_df$PerceivedRisk_1)
-mean(omit_df$PerceivedRisk_2)
-mean(omit_df$PerceivedRisk_3)
-mean(omit_df$PerceivedRisk_4)
-mean(omit_df$PerceivedRisk_5)
-mean(omit_df$PerceivedRisk_6)
-
-#perieved value means
-
-mean(omit_df$PerceivedValue_1)
-mean(omit_df$PerceivedValue_2)
-mean(omit_df$PerceivedValue_3)
-
-#DoG means
-
-mean(omit_df$COVID_DoG_Questions.1)
-mean(omit_df$COVID_DoG_Questions.2)
-mean(omit_df$COVID_DoG_Questions.3)
-mean(omit_df$COVID_DoG_Questions.4)
-mean(omit_df$COVID_DoG_Questions.5)
-mean(omit_df$COVID_DoG_Questions.6)
-
-
-
-
-
-
-
 
 ```
 
@@ -559,13 +656,22 @@ omit_df <- omit_df %>% mutate(COVID_traumatic_stress = rowMeans(mini_df),
                               
 ```
 
-# COVID Impacts and Experiences (Ipmacts calculated as a mean, Expereinces TBD)
+# COVID Impacts and Experiences (Ipmacts calculated as a mean. Expereinces calcuated as mean across three sub scales)
 ```{r}
 Impacts <- omit_df %>% select(Impacts_financial1:Impacts_psychology3)
-Experiences <- omit_df %>% select(contains("PersonalDiagnoses") | contains("Proximity") | contains("News"))
+Personal_Experiences <- omit_df %>% select(PersonalDiagnoses_1:PersonalDiagnoses_3)
+Proxmity_Experiences <- omit_df %>% select(Proximity_1:Proximity_2)
+News_Experiences <- omit_df %>% select(News_1:News_2)
+
+
+
 omit_df <- omit_df %>% mutate(Impacts_index = rowMeans(Impacts), 
                               .before = PersonalDiagnoses_1)
-omit_df <- omit_df %>% mutate(Experiences_index = rowMeans(Experiences),
+omit_df <- omit_df %>% mutate(Personal_Diagnoses_index = rowMeans(Personal_Experiences),
+                              .before = Age)
+omit_df <- omit_df %>% mutate(Proximity_to_others_index = rowMeans(Proxmity_Experiences),
+                              .before = Age)
+omit_df <- omit_df %>% mutate(News_index = rowMeans(News_Experiences),
                               .before = Age)
 ```
 
@@ -605,28 +711,7 @@ omit_df <- omit_df %>% mutate(SDRS_Sum_scaled,
 
 ## Summary statistics ##
 ```{r}
-summary(omit_df$PandemicLengthExpect.1)
-describe(omit_df$COVID_DoG_index)
-describe(omit_df$socialgatherings_index)
-describe(omit_df$traveling_index)
-describe(omit_df$Norms_index)
-describe(omit_df$FamilyNorm_index)
-describe(omit_df$FriendsNorm_index)
-describe(omit_df$StrangerNorm_index)
-describe(omit_df$GCS_index)
-describe(omit_df$IUS_Sum)
-describe(omit_df$Pathogen_Disgust_index)
-describe(omit_df$Sexual_Disgust_index)
-describe(omit_df$Moral_Disgust_index)
-describe(omit_df$harm_foundation)
-describe(omit_df$fairness_foundation)
-describe(omit_df$purity_foundation)
-describe(omit_df$ingroup_foundation)
-describe(omit_df$harm_foundation)
-describe(omit_df$authority_foundation)
-describe(omit_df$SDRS_Sum_scaled)
-describe(omit_df$Impacts_index)
-describe(omit_df$Stress_index)
+
 ```
 
 ## Demographics ##  
@@ -695,6 +780,13 @@ ggscatter(omit_df, x = "traveling_index", y = "socialgatherings_index",
           add = "reg.line", conf.int = TRUE, 
           cor.coef = TRUE, cor.method = "pearson",
           xlab = "traveling index ", ylab = "social gathering index")
+
+# COVID DoG and MCQ
+ggscatter(omit_df, x = "logCOVID_DoG_index", y = "logMeanK", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "logCOVID_DoG_index", ylab = "logMeanK")
+
 #COVID DoG Item Correlations  
   
 COVID_DoG <- data.frame(df$COVID_DoG_Questions.1,df$COVID_DoG_Questions.2,df$COVID_DoG_Questions.3,df$COVID_DoG_Questions.4, df$COVID_DoG_Questions.5, df$COVID_DoG_Questions.6)
@@ -704,60 +796,6 @@ COVID_DoG_table <- rcorr(as.matrix(COVID_DoG))
 COVID_DoG_table
 
 
-
-
-
-
-
-```
-
-## Task Analyses 
-
-
-## Linear Regressions + comparing data 
-#Moral Foundations and Delaying and comparing data as is and transfromed data
-```{r}
-
-MFTModel1 <- lm(COVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation, data = omit_df)
-               
-summary(MFTModel1) 
-
- MFTModel2 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation, data = omit_df)
-               
-summary(MFTModel2)
-
-#looking at the two models, MFTModel2 seems to be a lot stronger. The median is closer to 0, the min and max are more similar in terms of magnitude, and the standard error is lower. There are also more sig results, and at higher levels, but that necessarily doesn't indicate a good model? It seems like in this case, the log data is better for our linear regression.  Let's try another one, though! 
-
-```
-#Disgust and delaying and comparing data as is and transformed data 
-```{r}
-
-DisgustModel1 <- lm(COVID_DoG_index ~ Pathogen_Disgust_index + Moral_Disgust_index + Sexual_Disgust_index, data = omit_df)
-               
-summary(DisgustModel1) 
-
-DisgustModel2 <- lm(logCOVID_DoG_index ~ Pathogen_Disgust_index + Moral_Disgust_index + Sexual_Disgust_index, data = omit_df)
-               
-summary(DisgustModel2) 
-
-##looking at the two models, Te second model seems to be a lot stronger. The median is closer to 0, the min and max are more similar in terms of magnitude, and the standard error is lower. 
-
-```
-
-#Norms and delaying and comparing models 
-
-```{r}
-
-NormsModel1 <- lm(COVID_DoG_index ~ FamilyNorm_index + FriendsNorm_index + StrangerNorm_index, data = omit_df)
-
-summary(NormsModel1)
-
-NormsModel2 <- lm(logCOVID_DoG_index ~ FamilyNorm_index + FriendsNorm_index + StrangerNorm_index, data = omit_df)
-
-summary(NormsModel2)
-
-##looking at the two models, Again, the second model seems to be a lot stronger. The median is closer to 0, the min and max are more similar in terms of magnitude, and the standard error is lower.  It seems like the log data is better for our linear regression. 
-
 ```
 
 ## Linear Regressions 
@@ -765,6 +803,10 @@ summary(NormsModel2)
 # COVID DoG and General Uncertainty
 
 ```{r}
+ggscatter(omit_df, x = "logCOVID_DoG_index", y = "GCS_index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "COVID DoG ", ylab = "General Uncertainity ")
 
 GCSModel <- lm(logCOVID_DoG_index ~ GCS_index, data = omit_df)
 
@@ -779,6 +821,281 @@ plot(GCSModel)
 #2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning with some severe falling off. 
 
 #3 Scale-Location:homoscedasticity test. Relativity flat line. 
+
+#4 No dots outside of cooks line. good! 
+
+#Are there outliers in the model?
+
+outlierTest(GCSModel)
+
+omit_df_final <-omit_df[!(omit_df$id=="19" | omit_df$id=="20" |omit_df$id=="29" | omit_df$id=="25" | omit_df$id=="51" | omit_df$id=="54" | omit_df$id=="36" | omit_df$id=="61" | omit_df$id=="69" | omit_df$id=="119"| omit_df$id=="121"| omit_df$id=="142" | omit_df$id=="166" | omit_df$id=="167" | omit_df$id=="168"| omit_df$id=="223" | omit_df$id=="226" |omit_df$id=="252" | omit_df$id=="256" | omit_df$id=="259" | omit_df$id=="268" | omit_df$id=="278" | omit_df$id=="334" |omit_df$id=="363" |omit_df$id=="365" | omit_df$id=="376"),]
+
+#What does it look like now?
+
+GCSModel2 <- lm(logCOVID_DoG_index ~ GCS_index, data = omit_df_final)
+
+summary(GCSModel2)
+
+plot(GCSModel2)
+
+bptest(GCSModel2)
+
+#no hetero
+
+#any remaining outliers?
+
+outlierTest(GCSModel2)
+
+#all good!
+```
+
+#COVID DoG and MCQ (K indices)
+
+```{r}
+#pre log transformation 
+MCQModel <- lm(logCOVID_DoG_index ~ SmlK, data =  omit_df_final)
+
+summary(MCQModel)
+
+plot(MCQModel)
+
+bptest(MCQModel)
+
+#1 Residuals Plot: Linear assumption met, flat line w/ no patterns.
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning and end with some falling off
+
+#3 Scale-Location:homoscedasticity test. flat line.  No sig number in bptest. 
+
+#4 No dots outside of cooks line. good! 
+
+MCQModel2 <- lm(logCOVID_DoG_index ~ MedK, data =  omit_df_final)
+
+summary(MCQModel2)
+
+plot(MCQModel2)
+
+bptest(MCQModel2)
+
+#1 Residuals Plot: Linear assumption met, flat line w/ no patterns.
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning and end with some falling off. 
+
+#3 Scale-Location:homoscedasticity test. flat line. No sig number in bptest. 
+
+#4 No dots outside of cooks line. good! 
+
+MCQModel3 <- lm(logCOVID_DoG_index ~ LrgK, data =  omit_df_final)
+
+summary(MCQModel3)
+
+plot(MCQModel3)
+
+bptest(MCQModel3)
+
+#1 Residuals Plot: Linear assumption met, flat line w/ no patterns.
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning and end with severe falling off. 
+
+#3 Scale-Location:homoscedasticity test. Relativity flat line. No sig number in bptest.
+
+#4 No dots outside of cooks line. good! 
+
+MCQModel4 <- lm(logCOVID_DoG_index ~ MeanK, data =  omit_df_final)
+
+summary(MCQModel4)
+
+plot(MCQModel4)
+
+bptest(MCQModel4)
+
+#1 Residuals Plot: Linear assumption met, flat line w/ no patterns.
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning and end with some falling off. 
+
+#3 Scale-Location:homoscedasticity test. Relativity flat line. No sig number in bptest.
+
+#4 No dots outside of cooks line. good! 
+
+```
+
+```{r}
+#post log transformation 
+
+MCQModel1.5 <- lm(logCOVID_DoG_index ~ logSmlK, data =  omit_df_final)
+
+summary(MCQModel1.5)
+
+plot(MCQModel1.5)
+
+bptest(MCQModel1.5)
+
+#1 Residuals Plot: Linear assumption met, flat line w/ no patterns. Better distribution of plots, too! 
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning and end with some falling off
+
+#3 Scale-Location:homoscedasticity test. flat line.  No sig number in bptest. Better distribution of plots, too!
+
+#4 No dots outside of cooks line. good! Better distribution of plots, too!
+
+MCQModel2.5 <- lm(logCOVID_DoG_index ~ logMedK, data =  omit_df_final)
+
+summary(MCQModel2.5)
+
+plot(MCQModel2.5)
+
+bptest(MCQModel2.5)
+
+#1 Residuals Plot: Linear assumption met, flat line w/ no patterns. Better distribution of plots, too!
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning and end with some falling off. 
+
+#3 Scale-Location:homoscedasticity test. flat line. No sig number in bptest. Better distribution of plots, too!
+
+#4 No dots outside of cooks line. good! Better distribution of plots, too!
+
+MCQModel3.5 <- lm(logCOVID_DoG_index ~ logLrgK, data =  omit_df_final)
+
+summary(MCQModel3.5)
+
+plot(MCQModel3.5)
+
+bptest(MCQModel3.5)
+
+#1 Residuals Plot: Linear assumption met, flat line w/ no patterns. Better distribution of plots, too!
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning and end with severe falling off. 
+
+#3 Scale-Location:homoscedasticity test. Relativity flat line. No sig number in bptest. Better distribution of plots, too!
+
+#4 No dots outside of cooks line. good! Better distribution of plots, too!
+
+MCQModel4.5 <- lm(logCOVID_DoG_index ~ logMeanK, data =  omit_df_final)
+
+summary(MCQModel4.5)
+
+plot(MCQModel4.5)
+
+bptest(MCQModel4.5)
+
+#1 Residuals Plot: Linear assumption met, flat line w/ no patterns. Better distribution of plots, too!
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning and end with severe falling off. 
+
+#3 Scale-Location:homoscedasticity test. Relativity flat line. No sig number in bptest. Better distribution of plots, too!
+
+#4 No dots outside of cooks line. good! Better distribution of plots, too!
+
+```
+#MCQ and Uncertainty 
+
+```{r}
+
+GCSModel3 <- lm(logLrgK ~ GCS_index, data =  omit_df_final)
+
+summary(GCSModel3)
+
+plot(GCSModel3)
+
+bptest(GCSModel3)
+
+#1 Residuals Plot:
+
+#2 QQ Plot: 
+
+#3 Scale-Location:homoscedasticity test. flat line. 
+
+#4 No dots outside of cooks line.  (?) 
+
+GCSModel4 <-  lm(logMedK ~ GCS_index, data =  omit_df_final)
+
+summary(GCSModel4)
+
+plot(GCSModel4)
+
+bptest(GCSModel4)
+
+#1 Residuals Plot:
+
+#2 QQ Plot: 
+
+#3 Scale-Location:homoscedasticity test. 
+
+#4 No dots outside of cooks line.  (?) 
+
+GCSModel5 <-  lm(logSmlK ~ GCS_index, data =  omit_df_final)
+
+summary(GCSModel5)
+
+plot(GCSModel5)
+
+bptest(GCSModel5)
+
+#1 Residuals Plot: 
+
+#2 QQ Plot:
+
+#3 Scale-Location:homoscedasticity test. 
+
+#4 No dots outside of cooks line (?) 
+
+GCSModel6 <-  lm(logMeanK ~ GCS_index, data =  omit_df_final)
+
+summary(GCSModel6)
+
+plot(GCSModel6)
+
+bptest(GCSModel6)
+```
+
+#COVID DoG and MCQ (ICR Indices)
+```{r}
+
+MCQModel4 <- lm(logCOVID_DoG_index ~ SmlICR, data =  omit_df_final)
+
+summary(MCQModel4)
+
+plot(MCQModel4)
+
+bptest(MCQModel4)
+
+#1 Residuals Plot: Linear assumption met, flat line w/ no patterns.
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning and end with some falling off
+
+#3 Scale-Location:homoscedasticity test. flat line.  No sig number in bptest. 
+
+#4 No dots outside of cooks line. good! 
+
+MCQModel5 <- lm(logCOVID_DoG_index ~ MedICR, data =  omit_df_final)
+
+summary(MCQModel5)
+
+plot(MCQModel5)
+
+bptest(MCQModel5)
+
+#1 Residuals Plot: Linear assumption met, flat line w/ no patterns.
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning and end with some falling off. 
+
+#3 Scale-Location:homoscedasticity test. flat line. No sig number in bptest. 
+
+#4 No dots outside of cooks line. good! 
+
+MCQModel6 <- lm(logCOVID_DoG_index ~ LrgICR, data =  omit_df_final)
+
+summary(MCQModel6)
+
+plot(MCQModel6)
+
+bptest(MCQModel6)
+
+#1 Residuals Plot: Linear assumption met, flat line w/ no patterns.
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning and end with severe falling off. 
+
+#3 Scale-Location:homoscedasticity test. Relativity flat line. No sig number in bptest.
 
 #4 No dots outside of cooks line. good! 
 
@@ -800,14 +1117,35 @@ plot(SocialDesirabilityModel)
 
 #3 Scale-Location:homoscedasticity test. Relativity flat line. 
 
-
 #4 No dots outside of cooks line. good! 
 
+##Looking into closer to residuals not being normally distributed 
 
+#Are there outliers in the model?
+
+outlierTest(SocialDesirabilityModel)
+
+leveragePlots(SocialDesirabilityModel)
+
+#what does it look like when we remove those outliers?
+
+SocialDesirabilityModel2 <- lm(logCOVID_DoG_index ~ SDRS_Sum_scaled, data = omit_df_final)
+
+summary(SocialDesirabilityModel2)
+
+plot(SocialDesirabilityModel2)
+
+outlierTest(SocialDesirabilityModel2)
+
+bptest(SocialDesirabilityModel2)
+
+#no hetero
+
+#The QQ plot looks a lot better and there are no remaining outliers. 
 
 ```
 
-#COVID DoG and Poltiical Orientation
+#COVID DoG and Poltiical Orientation (Everett 2013)
 
 ```{r}
 
@@ -819,17 +1157,85 @@ plot(PoliticalOrientationModel1)
 
 #1 Residuals Plot: Linear assumption met, flat line w/ no patterns.
 
-#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, eexcept for the beginning with some severe falling off. 
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning with some severe falling off. 
 
 #3 Scale-Location:homoscedasticity test. Relativity flat line. 
 
+
 #4 No dots outside of cooks line. good! 
 
-PoliticalOrientationModel2 <- lm(logCOVID_DoG_index ~ Measure2_liberterian_Index + Measure2_liberal_Index + Measure2_cons_Index , data = omit_df)
+#Let's try using the final data frame
 
-summary(PoliticalOrientationModel2)
+PoliticalOrientationModel2 <- lm(logCOVID_DoG_index ~ Measure5_Social_Index + Measure5_Political_Index, data = omit_df_final)
+
+summary(PoliticalOrientationModel2) 
 
 plot(PoliticalOrientationModel2)
+
+#1 Residuals Plot: Linear assumption met, flat line w/ no patterns.
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)?  Looks good! 
+
+#3 Scale-Location:homoscedasticity test. Not a flat line, concerning. 
+
+#4 No dots outside of cooks line. good! 
+
+bptest(PoliticalOrientationModel2)
+
+#We got a serious case of heteroscedaciity folks. What does a model with robust standard errors look like? 
+
+coeftest(PoliticalOrientationModel2, vcov = vcovHC(PoliticalOrientationModel2, "HC1")) 
+
+#vs
+
+summary(PoliticalOrientationModel2) 
+
+#Model adjusted slightly, but relatively the same
+
+
+```
+
+#other political variable (Diaz 2020), using the final data frame straight out the gate
+```{r}
+PoliticalOrientationModel3 <- lm(logCOVID_DoG_index ~ Measure2_liberterian_Index + Measure2_liberal_Index + Measure2_cons_Index , data = omit_df_final)
+
+summary(PoliticalOrientationModel3)
+
+plot(PoliticalOrientationModel3)
+
+outlierTest(PoliticalOrientationModel3)
+
+#1 Residuals Plot: Linear assumption met, flat line w/ no patterns.
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for some falling towards the end 
+
+#3 Scale-Location:homoscedasticity test. Relatively flat line. 
+
+bptest(PoliticalOrientationModel3)
+
+#we got heteroscedasticity
+
+#4 No dots outside of cooks line. good! 
+
+coeftest(PoliticalOrientationModel3, vcov = vcovHC(PoliticalOrientationModel3, "HC1")) 
+
+#vs
+
+summary(PoliticalOrientationModel3) 
+
+#Liberal Index is now significant, as well as the cons index is still sig. 
+
+
+```
+
+#Norms + DoG 
+```{r}
+
+NormsModel1 <- lm(logCOVID_DoG_index ~ FamilyNorm_index + FriendsNorm_index + StrangerNorm_index, data = omit_df)
+
+summary(NormsModel1)
+
+plot(NormsModel1)
 
 #1 Residuals Plot: Linear assumption met, flat line w/ no patterns.
 
@@ -839,13 +1245,9 @@ plot(PoliticalOrientationModel2)
 
 #4 No dots outside of cooks line. good! 
 
-```
+#lets see what things look like using the final dataset 
 
-#Norms + DoG 
-
-```{r}
-
-NormsModel2 <- lm(logCOVID_DoG_index ~ FamilyNorm_index + FriendsNorm_index + StrangerNorm_index, data = omit_df)
+NormsModel2 <- lm(logCOVID_DoG_index ~ FamilyNorm_index + FriendsNorm_index + StrangerNorm_index, data = omit_df_final)
 
 summary(NormsModel2)
 
@@ -853,84 +1255,35 @@ plot(NormsModel2)
 
 #1 Residuals Plot: Linear assumption met, flat line w/ no patterns.
 
-#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning with some severe falling off. 
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part!
 
-#3 Scale-Location:homoscedasticity test. Not a flat line, concerning. 
+#3 Scale-Location:homoscedasticity test. Relatively flat! 
 
+bptest(NormsModel2)
+
+#just barely sig!
 
 #4 No dots outside of cooks line. good! 
 
+coeftest(NormsModel2, vcov = vcovHC(NormsModel2, "HC1")) 
 
-#To address the potential issue of heterosedacitiy, let's try transforming the norm variables. 
+#vs
 
-omit_df$logFamilyNorm_index=log(omit_df$FamilyNorm_index)
+summary(NormsModel2) 
 
-omit_df$logFriendsNorm_index=log(omit_df$FriendsNorm_index)
-
-omit_df$logStrangerNorm_index=log(omit_df$StrangerNorm_index)
-
-NormsModel3 <- lm(logCOVID_DoG_index ~ logFamilyNorm_index + logFriendsNorm_index + logStrangerNorm_index , data = omit_df)
-
-summary(NormsModel3)
-
-plot(NormsModel3)
-
-# Lets compare the two:
-
-plot(NormsModel2)
-
-plot(NormsModel3)
-
-#Okay.. it looks better visually. What does a test say? 
-
-bptest(NormsModel2)
-bptest(NormsModel3)
-
-#Yikes both are significant by quite a bit! Let's try a different transformation. 
-
-omit_df$SqrtFamilyNorm_index=sqrt(omit_df$FamilyNorm_index)
-
-omit_df$SqrtFriendsNorm_index=sqrt(omit_df$FriendsNorm_index)
-
-omit_df$SqrtStrangerNorm_index=sqrt(omit_df$StrangerNorm_index)
-
-NormsModel4 <- lm(logCOVID_DoG_index ~ SqrtFamilyNorm_index + SqrtFriendsNorm_index + SqrtStrangerNorm_index , data = omit_df)
-
-summary(NormsModel4)
-
-plot(NormsModel4)
-
-#dis is a disaster 
-
-#What about a weighted regression? 
-
-#define weights to use
-wt <- 1 / lm(abs(NormsModel2$residuals) ~ NormsModel2$fitted.values)$fitted.values^2
-
-#perform weighted least squares regression
-NormsModel5 <- lm(logCOVID_DoG_index ~ FamilyNorm_index + FriendsNorm_index + StrangerNorm_index, data = omit_df, weights=wt)
-
-#view summary of model
-summary(NormsModel5)
-
-plot(NormsModel5)
-plot(NormsModel2)
-
-#Looks a lot better visually..  What about the test?
-
-bptest(NormsModel5)
+#same significance, just different levels of sig
 
 
 ```
-#Norms and Political Oreintation
+#Norms and Political Oreintation (Everett 2013)
 
 ```{r}
 
-PoliticalOrientationModel3 <- lm(Norms_index ~ Measure5_Social_Index + Measure5_Political_Index, data = omit_df)
+PoliticalOrientationModel4 <- lm(Norms_index ~ Measure5_Social_Index + Measure5_Political_Index, data = omit_df)
 
-summary(PoliticalOrientationModel3)
+summary(PoliticalOrientationModel4)
 
-plot(PoliticalOrientationModel3)
+plot(PoliticalOrientationModel4)
 
 #1 Residuals Plot: Relatively flat line.   
 
@@ -938,14 +1291,54 @@ plot(PoliticalOrientationModel3)
 
 #3 Scale-Location:homoscedasticity test. Relatively flat line. 
 
+#4 No dots outside of cooks line. good! 
+
+#What about final dataset?
+
+PoliticalOrientationModel5 <- lm(Norms_index ~ Measure5_Social_Index + Measure5_Political_Index, data = omit_df_final)
+
+summary(PoliticalOrientationModel5)
+
+plot(PoliticalOrientationModel5)
+
+outlierTest(PoliticalOrientationModel5)
+
+#1 Residuals Plot: relatively flat line -- linearity seems to be here! 
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning and end, but not too bad. 
+
+#3 Scale-Location:homoscedasticity test. Relativity flat line
+
+bptest(PoliticalOrientationModel5)
+
+#heteroscedacity is here! 
 
 #4 No dots outside of cooks line. good! 
 
-PoliticalOrientationModel4 <- lm(Norms_index ~ Measure2_liberterian_Index + Measure2_liberal_Index + Measure2_cons_Index , data = omit_df)
+```
 
-summary(PoliticalOrientationModel4)
+```{r}
+#addressing Heteroskedasticity in the model
 
-plot(PoliticalOrientationModel4)
+coeftest(PoliticalOrientationModel5, vcov = vcovHC(PoliticalOrientationModel5, "HC1")) 
+
+#vs
+
+summary(PoliticalOrientationModel5) 
+
+#same results, less significance 
+
+```
+
+#Norms and Political Orientation (Diaz 2020)
+```{r}
+PoliticalOrientationModel6 <- lm(Norms_index ~ Measure2_liberterian_Index + Measure2_liberal_Index + Measure2_cons_Index , data = omit_df_final)
+
+summary(PoliticalOrientationModel6)
+
+plot(PoliticalOrientationModel6)
+
+outlierTest(PoliticalOrientationModel6)
 
 #1 Residuals Plot: relatively flat line -- linearity seems to be here! 
 
@@ -953,8 +1346,24 @@ plot(PoliticalOrientationModel4)
 
 #3 Scale-Location:homoscedasticity test. Relativity flat line. 
 
+bptest(PoliticalOrientationModel6)
+
+#heteroscedacity is here! 
 
 #4 No dots outside of cooks line. good! 
+
+```
+
+```{r}
+#addressing Heteroskedasticity in the model
+
+coeftest(PoliticalOrientationModel6, vcov = vcovHC(PoliticalOrientationModel6, "HC1")) 
+
+#vs
+
+summary(PoliticalOrientationModel6) 
+
+#same results
 
 ```
 
@@ -962,11 +1371,44 @@ plot(PoliticalOrientationModel4)
 
 ```{r}
 ##Family Norms
-PoliticalOrientationModel5 <- lm(FamilyNorm_index ~ Measure5_Social_Index + Measure5_Political_Index, data = omit_df)
+PoliticalOrientationModel7 <- lm(FamilyNorm_index ~ Measure5_Social_Index + Measure5_Political_Index, data = omit_df_final)
 
-summary(PoliticalOrientationModel5)
+summary(PoliticalOrientationModel7)
 
-plot(PoliticalOrientationModel5)
+plot(PoliticalOrientationModel7)
+
+outlierTest(PoliticalOrientationModel7)
+
+#1 Residuals Plot: Relatively flat line! 
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the end. 
+
+#3 Scale-Location:homoscedasticity test. Not a flat line. Concerning.
+
+bptest(PoliticalOrientationModel7)
+
+#hetero is present 
+
+#4 No dots outside of cooks line. good!
+
+#addressing hetero
+
+coeftest(PoliticalOrientationModel7, vcov = vcovHC(PoliticalOrientationModel7, "HC1")) 
+
+#vs
+
+summary(PoliticalOrientationModel7) 
+
+#same levels of sig
+
+
+PoliticalOrientationModel8 <- lm(FamilyNorm_index ~ Measure2_liberterian_Index + Measure2_liberal_Index + Measure2_cons_Index , data = omit_df_final)
+
+summary(PoliticalOrientationModel8)
+
+plot(PoliticalOrientationModel8)
+
+outlierTest(PoliticalOrientationModel8)
 
 #1 Residuals Plot: Relatively flat line! 
 
@@ -974,28 +1416,36 @@ plot(PoliticalOrientationModel5)
 
 #3 Scale-Location:homoscedasticity test. Not a flat line. Concerning.
 
-PoliticalOrientationModel6 <- lm(FamilyNorm_index ~ Measure2_liberterian_Index + Measure2_liberal_Index + Measure2_cons_Index , data = omit_df)
+bptest(PoliticalOrientationModel8)
 
-summary(PoliticalOrientationModel6)
+#hetero present 
 
-plot(PoliticalOrientationModel6)
+#4 No dots outside of cooks line good!
 
-#1 Residuals Plot: Relatively flat line! 
+#addressing hetero
 
-#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the end. 
+coeftest(PoliticalOrientationModel8, vcov = vcovHC(PoliticalOrientationModel8, "HC1")) 
 
-#3 Scale-Location:homoscedasticity test. Not a flat line. Concerning.
+#vs
+
+summary(PoliticalOrientationModel8) 
+
+
+#chagne in significance levels, robust standard error model only has liberal and cons as sig 
+
 
 ```
 
 ```{r}
 ##Friend Norms
 
-PoliticalOrientationModel7 <- lm(FriendsNorm_index ~ Measure5_Social_Index + Measure5_Political_Index, data = omit_df)
+PoliticalOrientationModel9 <- lm(FriendsNorm_index ~ Measure5_Social_Index + Measure5_Political_Index, data = omit_df_final)
 
-summary(PoliticalOrientationModel7)
+summary(PoliticalOrientationModel9)
 
-plot(PoliticalOrientationModel7)
+plot(PoliticalOrientationModel9)
+
+outlierTest(PoliticalOrientationModel9)
 
 #1 Residuals Plot: Relatively flat line! 
 
@@ -1003,15 +1453,30 @@ plot(PoliticalOrientationModel7)
 
 #3 Scale-Location:homoscedasticity test. Not a flat line. Concerning.
 
+bptest(PoliticalOrientationModel9)
 
-#4 No dots outside of cooks line. good! 
+#hetero present 
+
+#4 No dots outside of cooks line. good!
+
+#addressing hetero
+
+coeftest(PoliticalOrientationModel9, vcov = vcovHC(PoliticalOrientationModel9, "HC1")) 
+
+#vs
+
+summary(PoliticalOrientationModel9) 
+
+#same results relatively  
 
 
-PoliticalOrientationModel8 <- lm(FriendsNorm_index ~ Measure2_liberterian_Index + Measure2_liberal_Index + Measure2_cons_Index , data = omit_df)
+PoliticalOrientationModel10 <- lm(FriendsNorm_index ~ Measure2_liberterian_Index + Measure2_liberal_Index + Measure2_cons_Index , data = omit_df_final)
 
-summary(PoliticalOrientationModel8)
+summary(PoliticalOrientationModel10)
 
-plot(PoliticalOrientationModel8)
+plot(PoliticalOrientationModel10)
+
+outlierTest(PoliticalOrientationModel10)
 
 #1 Residuals Plot: Flat line!  
 
@@ -1019,18 +1484,34 @@ plot(PoliticalOrientationModel8)
 
 #3 Scale-Location:homoscedasticity test. Relatively flat line. 
 
+bptest(PoliticalOrientationModel10)
+
+#hetero is present 
 
 #4 No dots outside of cooks line. good! 
+
+#addressing hetero
+
+coeftest(PoliticalOrientationModel10, vcov = vcovHC(PoliticalOrientationModel10, "HC1")) 
+
+#vs
+
+summary(PoliticalOrientationModel10) 
+
+#still significant, just different levels 
+
 ```
 
 
 ```{r}
 ##Stranger Norms 
-PoliticalOrientationModel9 <- lm(StrangerNorm_index ~ Measure5_Social_Index + Measure5_Political_Index, data = omit_df)
+PoliticalOrientationModel11 <- lm(StrangerNorm_index ~ Measure5_Social_Index + Measure5_Political_Index, data = omit_df_final)
 
-summary(PoliticalOrientationModel9)
+summary(PoliticalOrientationModel11)
 
-plot(PoliticalOrientationModel9)
+plot(PoliticalOrientationModel11)
+
+outlierTest(PoliticalOrientationModel11)
 
 #1 Residuals Plot: Relatively flat.  
 
@@ -1038,13 +1519,31 @@ plot(PoliticalOrientationModel9)
 
 #3 Scale-Location:homoscedasticity test. Relatively flat line. 
 
+bptest(PoliticalOrientationModel11)
+
+#heteroscadicity is present 
+
+coeftest(PoliticalOrientationModel11, vcov = vcovHC(PoliticalOrientationModel11, "HC1")) 
+
+#vs
+
+summary(PoliticalOrientationModel11)
+
+#no significance in this model anymore 
+
+```
+
+
+```{r}
 #4 No dots outside of cooks line. good! 
 
-PoliticalOrientationModel10 <- lm(StrangerNorm_index ~ Measure2_liberterian_Index + Measure2_liberal_Index + Measure2_cons_Index , data = omit_df)
+PoliticalOrientationModel12 <- lm(StrangerNorm_index ~ Measure2_liberterian_Index + Measure2_liberal_Index + Measure2_cons_Index , data = omit_df_final)
 
-summary(PoliticalOrientationModel10)
+summary(PoliticalOrientationModel12)
 
-plot(PoliticalOrientationModel10)
+plot(PoliticalOrientationModel12)
+
+outlierTest(PoliticalOrientationModel12)
 
 #1 Residuals Plot: Relatively flat  
 
@@ -1052,6 +1551,9 @@ plot(PoliticalOrientationModel10)
 
 #3 Scale-Location:homoscedasticity test. Relatively flat line. 
 
+bptest(PoliticalOrientationModel12)
+
+#no hetero
 
 #4 No dots outside of cooks line. good! 
 
@@ -1061,11 +1563,11 @@ plot(PoliticalOrientationModel10)
 
 ```{r}
 
-DisgustModel2 <- lm(logCOVID_DoG_index ~ Pathogen_Disgust_index + Moral_Disgust_index + Sexual_Disgust_index, data = omit_df)
+DisgustModel1 <- lm(logCOVID_DoG_index ~ Pathogen_Disgust_index + Moral_Disgust_index + Sexual_Disgust_index, data = omit_df)
                
-summary(DisgustModel2) 
+summary(DisgustModel1) 
 
-plot(DisgustModel2)
+plot(DisgustModel1)
 
 #1 Residuals Plot: Relatively flat  
 
@@ -1074,16 +1576,40 @@ plot(DisgustModel2)
 #3 Scale-Location:homoscedasticity test. Relatively flat line. 
 
 #4 No dots outside of cooks line. good! 
+
+DisgustModel2 <- lm(logCOVID_DoG_index ~ Pathogen_Disgust_index + Moral_Disgust_index + Sexual_Disgust_index, data = omit_df_final)
+               
+summary(DisgustModel2) 
+
+plot(DisgustModel2)
+
+#1 Residuals Plot: Relatively flat  
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning which has some falling off still. 
+
+#3 Scale-Location:homoscedasticity test. Kind of concerning. 
+
+bptest(DisgustModel2)
+
+#no Heteroscedasticity
+
+#4 No dots outside of cooks line. good! 
+
+outlierTest(DisgustModel2)
+
+# no outliers 
+
+
 ```
 
 #Moral Foundations and DoG
 ```{r}
 
- MFTModel2 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation, data = omit_df)
+ MFTModel1 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation, data = omit_df)
                
-summary(MFTModel2)
+summary(MFTModel1)
 
-plot(MFTModel2)
+plot(MFTModel1)
 
 #1 Residuals Plot: Relatively flat  
 
@@ -1093,38 +1619,90 @@ plot(MFTModel2)
 
 #4 No dots outside of cooks line. good! 
 
-#Do these effects still remain when doing a multiplie linear regression w/ political ideology included? 
+ MFTModel2 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation, data = omit_df_final)
+               
+summary(MFTModel2)
 
- MFTModel3 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation +Measure2_liberterian_Index + Measure2_liberal_Index + Measure2_cons_Index , data = omit_df)
+plot(MFTModel2)
+
+bptest(MFTModel2)
+
+#1 Residuals Plot: Relatively flat  
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning which has some falling off
+
+#3 Scale-Location:homoscedasticity test. Not a flat line. Concerning.
+
+#4 No dots outside of cooks line. good! 
+```
+#MFT, Political Orientation, and DoG
+```{r}
+
+#Do these effects still remain when doing a multiple linear regression w/ political ideology included? 
+
+ MFTModel3 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation +Measure2_liberterian_Index + Measure2_liberal_Index + Measure2_cons_Index , data = omit_df_final)
                
 summary(MFTModel3)
 
 plot(MFTModel3)
 
+#only cons ideology stil sig! What about if we do the other political ideology measure?
+
+MFTModel4 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation + Measure5_Social_Index + Measure5_Political_Index, data = omit_df_final)
+               
+summary(MFTModel4)
+
+plot(MFTModel4)
+
+#both measure of cons are sig --- interesting, the social measure wasn't sig in its original model..
+
 ```
 
-COVID DoG, Stress, Experience, and Impact 
+```{r}
+#addressing Heteroskedasticity in the models
+
+bptest(MFTModel3)
+
+#Let's do a model with robust standard errors 
+
+coeftest(MFTModel3, vcov = vcovHC(MFTModel3, "HC1"))
+
+#vs
+
+summary(MFTModel3)
+
+#All of the same variables remain significant, although there is some changing standard errors.  
+
+coeftest(MFTModel4, vcov = vcovHC(MFTModel4, "HC1"))
+
+#vs
+
+summary(MFTModel4)
+
+#All of the same variables remain significant, although there is some changing standard errors.  
+
+```
+
+#COVID DoG, Stress, Experience, and Impact 
 ```{r}
 
-COVIDExpereince <- lm(logCOVID_DoG_index ~ Impacts_index + Stress_index, data = omit_df) 
+COVIDImpactStress <- lm(logCOVID_DoG_index ~ Impacts_index + Stress_index + Personal_Diagnoses_index + Proximity_to_others_index + News_index, data = omit_df_final) 
 
-summary(COVIDExpereince)
+summary(COVIDImpactStress)
 
-plot(COVIDExpereince)
+plot(COVIDImpactStress)
 
 #1 Residuals Plot: Relatively flat  
 
-#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning which has some severe falling off.  
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? Good!
 
 #3 Scale-Location: Relatively flat line. 
 
+bptest(COVIDImpactStress)
+
+#no heteroscadicity! 
+
 #4 No dots outside of cooks line. good! 
-
-#Does COVID Stress moderate the Conservative COVID DoG relationship?
-
-COVIDStress_Moderation <- lm(logCOVID_DoG_index ~ Stress_index+ Measure2_cons_Index + Measure2_cons_Index*Stress_index, data = omit_df)
-
-summary(COVIDStress_Moderation)
 
 ```
 # MISC SECTION #
