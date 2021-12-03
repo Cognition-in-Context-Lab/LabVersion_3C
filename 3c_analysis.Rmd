@@ -999,13 +999,14 @@ plot(GCSModel3)
 
 bptest(GCSModel3)
 
-#1 Residuals Plot:
+#1 Residuals Plot: Linear assumption met, flat line w/ no patterns. 
 
-#2 QQ Plot: 
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning and end with some falling off. 
 
-#3 Scale-Location:homoscedasticity test. flat line. 
+#3 Scale-Location:homoscedasticity test. Relativity flat line. No sig number in bptest. 
 
-#4 No dots outside of cooks line.  (?) 
+#4 No dots outside of cooks line. good! 
+
 
 GCSModel4 <-  lm(logMedK ~ GCS_index, data =  omit_df_final)
 
@@ -1015,13 +1016,17 @@ plot(GCSModel4)
 
 bptest(GCSModel4)
 
-#1 Residuals Plot:
+#1 Residuals Plot: Linear assumption met, flat line w/ no patterns. 
 
-#2 QQ Plot: 
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning and end with some falling off. 
 
-#3 Scale-Location:homoscedasticity test. 
+#3 Scale-Location:homoscedasticity test. Relativity flat line, but sig number in bptest.
 
-#4 No dots outside of cooks line.  (?) 
+#4 No dots outside of cooks line. good! 
+
+#Addressed heteroscadicity 
+
+coeftest(GCSModel4, vcov = vcovHC(GCSModel4, "HC1")) 
 
 GCSModel5 <-  lm(logSmlK ~ GCS_index, data =  omit_df_final)
 
@@ -1031,13 +1036,17 @@ plot(GCSModel5)
 
 bptest(GCSModel5)
 
-#1 Residuals Plot: 
+#1 Residuals Plot: Linear assumption met, flat line w/ no patterns. 
 
-#2 QQ Plot:
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning and end with some falling off. 
 
-#3 Scale-Location:homoscedasticity test. 
+#3 Scale-Location:homoscedasticity test. Relativity flat line, but sig number in bptest.
 
-#4 No dots outside of cooks line (?) 
+#4 No dots outside of cooks line. good! 
+
+#Addressed heteroscadicity 
+
+coeftest(GCSModel5, vcov = vcovHC(GCSModel5, "HC1")) 
 
 GCSModel6 <-  lm(logMeanK ~ GCS_index, data =  omit_df_final)
 
@@ -1046,6 +1055,19 @@ summary(GCSModel6)
 plot(GCSModel6)
 
 bptest(GCSModel6)
+
+#1 Residuals Plot: Linear assumption met, flat line w/ no patterns. 
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning and end with some falling off. 
+
+#3 Scale-Location:homoscedasticity test. Relativity flat line, but sig number in bptest.
+
+#4 No dots outside of cooks line. good! 
+
+#Addressed heteroscadicity 
+
+coeftest(GCSModel6, vcov = vcovHC(GCSModel6, "HC1")) 
+
 ```
 
 #COVID DoG and MCQ (ICR Indices)
@@ -1634,6 +1656,16 @@ bptest(MFTModel2)
 #3 Scale-Location:homoscedasticity test. Not a flat line. Concerning.
 
 #4 No dots outside of cooks line. good! 
+
+#heteroscadicity is present 
+
+coeftest(MFTModel2, vcov = vcovHC(MFTModel2, "HC1")) 
+
+#vs
+
+summary(MFTModel2)
+
+#still sig!
 ```
 #MFT, Political Orientation, and DoG
 ```{r}
