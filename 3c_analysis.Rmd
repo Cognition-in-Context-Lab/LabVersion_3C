@@ -424,6 +424,11 @@ omit_df <- omit_df %>% mutate(MeanICR = rowMeans(mini_df),
 
 #Let's look at the distribution of the K indices 
 
+summary(omit_df$SmlK)
+summary(omit_df$MedK)
+summary(omit_df$LrgK)
+summary(omit_df$MeanK)
+
 hist(omit_df$SmlK)
 hist(omit_df$MedK)
 hist(omit_df$LrgK)
@@ -435,6 +440,12 @@ omit_df$logSmlK=log(omit_df$SmlK)
 omit_df$logMedK=log(omit_df$MedK)
 omit_df$logLrgK=log(omit_df$LrgK)
 omit_df$logMeanK=log(omit_df$MeanK)
+
+
+summary(omit_df$logSmlK)
+summary(omit_df$logMedK)
+summary(omit_df$logLrgK)
+summary(omit_df$logMeanK)
 
 
 hist(omit_df$logSmlK)
@@ -461,8 +472,6 @@ omit_df <- omit_df%>%
 omit_df <- omit_df%>%
   add_column(logMeanK = omit_df$logMeanK,
              .after = "MCQ_27") 
-
-
 
 
 #Let's look at the distribution of the ICR indices 
@@ -787,6 +796,12 @@ ggscatter(omit_df, x = "logCOVID_DoG_index", y = "logMeanK",
           cor.coef = TRUE, cor.method = "pearson",
           xlab = "logCOVID_DoG_index", ylab = "logMeanK")
 
+# Uncertaintiy and MCQ
+ggscatter(omit_df, x = "GCS_index", y = "logMeanK", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "GCS_index", ylab = "logMeanK")
+
 #COVID DoG Item Correlations  
   
 COVID_DoG <- data.frame(df$COVID_DoG_Questions.1,df$COVID_DoG_Questions.2,df$COVID_DoG_Questions.3,df$COVID_DoG_Questions.4, df$COVID_DoG_Questions.5, df$COVID_DoG_Questions.6)
@@ -847,6 +862,10 @@ bptest(GCSModel2)
 outlierTest(GCSModel2)
 
 #all good!
+
+plot(logCOVID_DoG_index ~ GCS_index, data =  omit_df_final)
+abline(GCSModel2)
+
 ```
 
 #COVID DoG and MCQ (K indices)
@@ -986,11 +1005,22 @@ bptest(MCQModel4.5)
 
 #4 No dots outside of cooks line. good! Better distribution of plots, too!
 
+plot(logCOVID_DoG_index ~ logMeanK, data =  omit_df_final)
+abline(MCQModel4.5)
+
 ```
 #MCQ and Uncertainty 
 
 ```{r}
 
+#Correlation
+
+ggscatter(omit_df, x = "GCS_index", y = "logMeanK", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "GCS_index", ylab = "logMeanK")
+
+#models
 GCSModel3 <- lm(logLrgK ~ GCS_index, data =  omit_df_final)
 
 summary(GCSModel3)
@@ -1007,8 +1037,8 @@ bptest(GCSModel3)
 
 #4 No dots outside of cooks line. good! 
 
+GCSModel4 <- lm(logMedK ~ GCS_index, data =  omit_df_final)
 
-GCSModel4 <-  lm(logMedK ~ GCS_index, data =  omit_df_final)
 
 summary(GCSModel4)
 
@@ -1067,6 +1097,23 @@ bptest(GCSModel6)
 #Addressed heteroscadicity 
 
 coeftest(GCSModel6, vcov = vcovHC(GCSModel6, "HC1")) 
+
+```
+```{r}
+#MCQ and uncertainty plots
+
+plot(logLrgK ~ GCS_index, data =  omit_df_final)
+abline(GCSModel3)
+
+plot(logMedK ~ GCS_index, data =  omit_df_final)
+abline(GCSModel4)
+
+plot(logSmlK ~ GCS_index, data =  omit_df_final)
+abline(GCSModel5)
+
+plot(logMeanK ~ GCS_index, data =  omit_df_final)
+abline(GCSModel6)
+
 
 ```
 
