@@ -776,6 +776,34 @@ ggplot(omit_df) +
   #geom_point(mapping = aes(x = COVID_DoG_Sum, y = Perceived_Risk_Sum))
 
 ```
+#Analyzing political breakdown of sample
+
+```{r}
+
+#find how many people put 4 or 5 for each orientation (liberal conservative, libertarian)
+length(which(omit_df$Measure2_2 == 4)) + length(which(omit_df$Measure2_2 == 5)) #liberal
+
+length(which(omit_df$Measure2_3 == 4)) + length(which(omit_df$Measure2_3 == 5)) #conservative
+
+length(which(omit_df$Measure2_4 == 4)) + length(which(omit_df$Measure2_4 == 5)) #libertarian
+
+#however, not everyone put a 4 or 5 in their answers. so...
+
+#check which orientation if greatest for each person
+omit_df$which_Measure2 = ifelse((omit_df$Measure2_2 > omit_df$Measure2_3) & (omit_df$Measure2_2 > omit_df$Measure2_4), 'liberal',
+                      ifelse((omit_df$Measure2_3 > omit_df$Measure2_2) & (omit_df$Measure2_3 > omit_df$Measure2_4), 'conservative', 
+                      ifelse((omit_df$Measure2_4 > omit_df$Measure2_2) & (omit_df$Measure2_4 > omit_df$Measure2_2),'libertarian', 'none')))
+
+length(which(omit_df$which_Measure2 == 'liberal'))
+length(which(omit_df$which_Measure2 == 'conservative'))
+length(which(omit_df$which_Measure2 == 'libertarian'))
+
+#just find average of each column
+mean(omit_df$Measure2_2)
+mean(omit_df$Measure2_3)
+mean(omit_df$Measure2_4)
+```
+
 
 ## Preliminary Analyses/ Correlations 
 ```{r}
@@ -1784,6 +1812,32 @@ bptest(COVIDImpactStress)
 #4 No dots outside of cooks line. good! 
 
 ```
+#Moderation Models (Political Orientation and DoG, moderated by Impact and Experiences)
+
+```{r}
+#the actual models
+impact_mod <- lm(COVID_DoG_index ~ Measure2_cons_Index*Impacts_index,
+  data=omit_df)
+summary (impact_mod)
+
+experiences_mod <- lm(COVID_DoG_index ~ Measure2_cons_Index*Personal_Diagnoses_index,
+  data=omit_df)
+summary (experiences_mod)
+
+#plotting simple slopes
+#install.packages("rockchalk")
+library(rockchalk)
+plotCurves(impact_mod, plotx="Measure2_cons_Index", modx="Impacts_index", interval="confidence")
+plotCurves(experiences_mod, plotx="Measure2_cons_Index", modx="Personal_Diagnoses_index", interval="confidence")
+
+#what does this mean
+#Impacts
+#Average is the blue line. people with less impact had a very slight smaller delay of gratification as they were a higher degree of conservative. people with more impact had a very slight larger delay of gratification as they were a higher degree of conservative.
+
+#Experiences
+#Average is the blue line. generally, as people became more conservative, they had lower delay of gratification. experience did not seem to moderate?
+```
+
 # MISC SECTION #
 
 ## Exploratory Factor Analysis for COVID DoG
