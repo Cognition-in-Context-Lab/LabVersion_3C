@@ -1,0 +1,156 @@
+---
+title: "3C analysis"
+author: "Winnie Zhuang"
+date: "3/7/2022"
+output: html_document
+---
+# Set Up
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(car)
+library(tidyverse)
+library(corrplot)
+library(PerformanceAnalytics)
+
+```
+
+##load in processed data file
+```{r}
+dt<-read_csv("omit_df.csv")
+#make rownames
+dt$rownames<-rownames(dt)
+dt %>% select(rownames,id)
+```
+
+## load in variable key
+
+# MCQ and general confidence about the future
+Hypothesis: People who report less confidence about the future should report more temporal discounting. 
+Measure and Items needed:
+General Confidence Scale (Keller et., all 2011): GCS_1:6
+MCQ
+
+## Plots
+```{r}
+hist(dt$GCS_index)
+hist(log(dt$MeanK))
+
+plot(dt$GCS_index,log(dt$MeanK))
+```
+Hmm doesn't appear to be too much of a relationship. 
+
+## Stats
+```{r}
+lm_mcq.gcf<-lm(log(dt$MeanK)~dt$GCS_index,data=dt)
+summary(lm_mcq.gcf)
+
+#plot 
+ggplot(aes(x=GCS_index,y=log(MeanK)),data=dt)+
+  geom_point() +
+  geom_smooth(method="lm")
+```
+A trending negative relationship. Higher GCS scores predicted lower log mean K values, F(1,391)=3.576 (or t=-1.891), p=.06.
+
+## Diagnostics
+```{r}
+outlierTest(lm_mcq.gcf)
+```
+
+
+# COVID DoG and MCQ
+Hypothesis:
+People who report more discounting on the general DoG measure will delay less on the adopted COVID 19 specific DoG Task
+
+## Plots
+```{r}
+hist(dt$logMeanK)
+hist(log(dt$COVID_DoG_index))
+
+plot(dt$logMeanK,log(dt$COVID_DoG_index))
+```
+Maybe a trending negative relationship?
+
+## Stats
+```{r}
+lm_mcq.cdog<-lm(log(COVID_DoG_index)~logMeanK,data=dt)
+summary(lm_mcq.cdog)
+
+#plot
+ggplot(aes(x=logMeanK,y=log(COVID_DoG_index)),data=dt)+
+  geom_point()+
+  geom_smooth(method="lm")
+```
+A significant negative relationship: higher log mean K values predict lower log COVID DoG indices, F(1,391) = 5.186 (or t=-2.277), p=.023.
+
+## Diagnostics
+```{r}
+plot(lm_mcq.cdog)
+
+outlierTest(lm_mcq.cdog)
+
+```
+3 potential outliers. Let's try without them. 
+
+## w/o outliers
+```{r}
+#tag outliers in dt
+lm_mcq.cdog_outls<-outlierTest(lm_mcq.cdog)$r %>% names() # get list of outlier names
+dt$lm_mcq.cdog_out<-ifelse(rownames(dt) %in% lm_mcq.cdog_outls, 1, 0) #tag outliers in dt
+#dt %>% filter(lm_mcq.cdog_out==1) %>% select(rownames)#check
+
+#view plot w/ outliers tagged
+ggplot(aes(x=logMeanK,y=log(COVID_DoG_index),
+           group=as.factor(lm_mcq.cdog_out),colour=as.factor(lm_mcq.cdog_out)),
+       data=dt)+
+  geom_point()
+
+#stats
+lm_mcq.cdog_out<-lm(log(COVID_DoG_index)~logMeanK,
+                    data=subset(dt,lm_mcq.cdog_out!=1))
+summary(lm_mcq.cdog_out)
+```
+Removing 3 outliers made results more significant.
+
+# COVID DoG and political orientation
+Hypothesis:
+Individuals will vary systematically in COVID DoG and norms by political orientation. 
+Specifically, Conservatives will delay less than Liberals on the COVID19 DoG task. 
+
+## Plots
+```{r}
+hist(log(dt$COVID_DoG_index))
+
+#norms
+hist(dt$FamilyNorm_index)
+hist(dt$FriendsNorm_index)
+hist(dt$StrangerNorm_index)
+
+#politics
+hist(dt$Measure2_liberal_Index) 
+hist(dt$Measure2_cons_Index)
+hist(dt$Measure2_liberterian_Index)
+hist(dt$Measure5_Political_Index)
+hist(dt$Measure5_SECS_Index)
+hist(dt$Measure5_Social_Index)
+```
+
+### Political orientation
+```{r}
+#are there separable dimensions of politics here?
+#look at a correlation plot
+dt_corrs<-subset(dt,select=c(Measure2_liberal_Index,
+                             Measure2_cons_Index,
+                             Measure2_liberterian_Index,
+                             Measure5_Political_Index,
+                             Measure5_SECS_Index,
+                             Measure5_Social_Index))
+chart.Correlation(dt_corrs)
+```
+
+
+## Stats
+Do Conservatives will delay less than Liberals on the COVID19 DoG task?
+```{r}
+
+```
+
