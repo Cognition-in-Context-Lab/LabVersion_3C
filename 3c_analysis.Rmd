@@ -13,6 +13,7 @@ library("ggpubr")
 library(psych)
 library(tidyverse)
 library(ggplot2)
+library(ggrepel)
 library(scales)
 #install.packages("Hmisc")
 #install.packages("lmtest")
@@ -21,6 +22,7 @@ library(scales)
 #install.packages("lm.beta")
 #install.packages("car")
 #install.packages("sandwich")
+#install.packages("ggrepel")
 library(sandwich)
 library(car)
 library(jtools)
@@ -41,6 +43,12 @@ omit_df <- read.csv("omit_df.csv", header=T, na.strings="")
 
 ## Summary statistics
 ```{r}
+#MCQ
+
+mean(omit_df$logMeanK)
+
+#Mean discounting on MCQ = -4.877
+
 ```
 
 ## Demographics  
@@ -189,8 +197,60 @@ plot(logMeanK ~ GCS_index, data =  omit_df)
 abline(GCSModel1)
 ```
 
+### COVID DoG and Uncertainity: People who report less confidence about the future should delay less on the adopted COVID 19 specific DoG Task.  
+
+```{r}
+
+#let's visualize the data
+
+ggscatter(omit_df, x = "logCOVID_DoG_index", y = "GCS_index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "COVID DoG ", ylab = "General Uncertainity ")
+
+GCSModel2 <- lm(logCOVID_DoG_index ~ GCS_index, data = omit_df)
+
+summary(GCSModel2)
+
+#checking assumptions for model
+
+plot(GCSModel2)
+
+#1 Residuals Plot: Linear assumption met, flat line w/ no patterns.
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning with some severe falling off. 
+
+#3 Scale-Location:homoscedasticity test. Downward slopped line. 
+
+bptest(GCSModel2)
+
+#Sig reported in bptest 
+
+#4 No dots outside of cooks line. good! 
+
+#Are there outliers in the model?
+
+outlierTest(GCSModel2)
+
+#There are no outliers. 
+```
+
 ### COVID DoG and MCQ (K indice): People who report more discounting on the general DoG measure will delay less on the adopted COVID 19 specific DoG Task
 ```{r}
+
+#lets graph the raw data and mark model outliers before the model gets fit
+
+#here are the outliers from the model, sub setted into their own data frame. 
+
+MCQMOdeloutliers <- omit_df[(omit_df$id=="226" | omit_df$id=="268" |omit_df$id=="278" |omit_df$id=="69" | omit_df$id=="25" |omit_df$id=="36" |omit_df$id=="54" | omit_df$id=="166" |omit_df$id=="167" |omit_df$id=="19" | omit_df$id=="119" |omit_df$id=="142" | omit_df$id=="252" |omit_df$id=="20" | omit_df$id=="61"),]
+
+#What do the outliers look like compared to the rest of the data?
+
+MCQModelRaw <- ggplot(omit_df, aes(x= logCOVID_DoG_index, y= logMeanK)) +
+  geom_point()
+
+MCQModelRaw + geom_label_repel(data = subset(MCQMOdeloutliers), aes(label = "outlier", size = NULL, color = NULL))
+
 
 MCQModel1 <- lm(logCOVID_DoG_index ~ logMeanK, data =  omit_df)
 
@@ -210,7 +270,7 @@ bptest(MCQModel1)
 
 outlierTest(MCQModel1)
 
-#outliers = 212, 253,262 
+#there are outliers! 
 
 # What does it look like if we remove outliers?
 
@@ -226,7 +286,7 @@ bptest(MCQModel2)
 
 outlierTest(MCQModel2)
 
-#additional outliers that popped up == 59, 15, 26, 44, 156, 157, 10, 109 
+#All good now!
 
 
 
@@ -234,8 +294,13 @@ outlierTest(MCQModel2)
 
 ```{r}
 #MCQ and COVID DoG plots
+##model1
 plot(logCOVID_DoG_index ~ logMeanK, data =  omit_df)
 abline(MCQModel1)
+
+##model 2
+plot(logCOVID_DoG_index ~ logMeanK, data =  omit_df)
+abline(MCQModel2)
 ```
 
 ### COVID DoG and Poltiical Orientation (Everett 2013): Individuals will vary systematically in COVID Specific DoG and norms by political orientation. Specifically,  Conservatives will delay less than Liberals on the COVID19 DoG task and report norms that favor immediate gratification. In addition, conservative ideology will be more predictive than the Harm/Purity foundation in predicting COVID19 DoG.
@@ -329,33 +394,12 @@ plot(MFTModel1)
 
 #3 Scale-Location:homoscedasticity test. Not a flat line. Concerning.
 
-#4 No dots outside of cooks line. good! 
+bptest(MFTModel1)
 
- MFTModel2 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation, data = omit_df_final)
-               
-summary(MFTModel2)
-
-plot(MFTModel2)
-
-bptest(MFTModel2)
-
-#1 Residuals Plot: Relatively flat  
-
-#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning which has some falling off
-
-#3 Scale-Location:homoscedasticity test. Not a flat line. Concerning.
+#bptest is sig! 
 
 #4 No dots outside of cooks line. good! 
 
-#heteroscadicity is present 
-
-coeftest(MFTModel2, vcov = vcovHC(MFTModel2, "HC1")) 
-
-#vs
-
-summary(MFTModel2)
-
-#still sig!
 ```
 
 #### MFT, Political Orientation, and DoG: Conservative ideology will be more predictive than the Harm/Purity foundation in predicting COVID19 DoG.
@@ -364,50 +408,71 @@ summary(MFTModel2)
 
 #Do these effects still remain when doing a multiple linear regression w/ political ideology included? (Diaz 2020)
 
- MFTModel3 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation +Measure2_liberterian_Index + Measure2_liberal_Index + Measure2_cons_Index , data = omit_df)
+ MFTModel2 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation +Measure2_liberterian_Index + Measure2_liberal_Index + Measure2_cons_Index , data = omit_df)
+               
+summary(MFTModel2)
+
+plot(MFTModel2)
+
+#1 Residuals Plot: Relatively flat  
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning which has some severe falling off.  
+
+#3 Scale-Location:homoscedasticity test. Not a flat line. Concerning.
+
+bptest(MFTModel2)
+
+#bptest is sig! 
+
+#4 No dots outside of cooks line. good! 
+
+#What about if we do the other political ideology measure? (Evertt 2013)
+
+MFTModel3 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation + Measure5_Social_Index + Measure5_Political_Index, data = omit_df)
                
 summary(MFTModel3)
 
 plot(MFTModel3)
 
-#only cons ideology stil sig! What about if we do the other political ideology measure? (Evertt 2013)
+#1 Residuals Plot: Relatively flat  
 
-MFTModel4 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation + Measure5_Social_Index + Measure5_Political_Index, data = omit_df_final)
-               
-summary(MFTModel4)
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning which has some severe falling off.  
 
-plot(MFTModel4)
-
-#both measure of cons are sig --- interesting, the social measure wasn't sig in its original model..
-
-```
-
-```{r}
-#addressing Heteroskedasticity in the models
+#3 Scale-Location:homoscedasticity test. Not a flat line. Concerning.
 
 bptest(MFTModel3)
 
-#Let's do a model with robust standard errors 
+#bptest is sig! 
 
-coeftest(MFTModel3, vcov = vcovHC(MFTModel3, "HC1"))
-
-#vs
-
-summary(MFTModel3)
-
-#All of the same variables remain significant, although there is some changing standard errors.  
-
-coeftest(MFTModel4, vcov = vcovHC(MFTModel4, "HC1"))
-
-#vs
-
-summary(MFTModel4)
-
-#All of the same variables remain significant, although there is some changing standard errors.  
-
+#4 No dots outside of cooks line. good! 
 ```
 
 ## other manuscript models 
+
+### MCQ and Moral Foudnations: No specfiic hypothesis. 
+
+```{r}
+
+MFTModel5 <- lm(logMeanK ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation, data = omit_df)
+               
+summary(MFTModel5)
+
+plot(MFTModel5)
+
+#1 Residuals Plot: Relatively flat  
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning and end which have some falling off. 
+
+#3 Scale-Location:homoscedasticity test. Flat-ish line. 
+
+bptest(MFTModel5)
+
+# No sig Bptest 
+
+#4 No dots outside of cooks line. good! 
+
+```
+
 
 ### COVID DoG and Social Deserability Measure: No specific Hypothesis 
 
@@ -501,7 +566,7 @@ summary(NormsModel2)
 
 ```
 
-### COVID DoG, Stress, Experience, and Impact:Individuals with more experience, impact, and stress with COVID will delay more on the COVID specific DoG task. 
+### COVID DoG, Stress, Experience, and Impact: Individuals with more experience, impact, and stress with COVID will delay more on the COVID specific DoG task. 
 
 ```{r}
 
@@ -576,66 +641,6 @@ plotCurves(stress_mod, plotx="Measure2_cons_Index", modx="Stress_index", interva
 ```
 
 ## Misc Models 
-
-### COVID DoG and General Uncertainty: 
-
-```{r}
-#let's visualize the data
-
-ggscatter(omit_df, x = "logCOVID_DoG_index", y = "GCS_index", 
-          add = "reg.line", conf.int = TRUE, 
-          cor.coef = TRUE, cor.method = "pearson",
-          xlab = "COVID DoG ", ylab = "General Uncertainity ")
-
-#running the lm
-
-GCSModel <- lm(logCOVID_DoG_index ~ GCS_index, data = omit_df)
-
-summary(GCSModel)
-
-#checking assumptions for model
-
-plot(GCSModel)
-
-#1 Residuals Plot: Linear assumption met, flat line w/ no patterns.
-
-#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning with some severe falling off. 
-
-#3 Scale-Location:homoscedasticity test. Relativity flat line. 
-
-#4 No dots outside of cooks line. good! 
-
-bptest(GCSModel)
-
-#Are there outliers in the model?
-
-outlierTest(GCSModel)
-
-omit_df_final <- omit_df[!(omit_df$id=="19" | omit_df$id=="20" |omit_df$id=="29" | omit_df$id=="25" | omit_df$id=="51" | omit_df$id=="54" | omit_df$id=="36" | omit_df$id=="61" | omit_df$id=="69" | omit_df$id=="119"| omit_df$id=="121"| omit_df$id=="142" | omit_df$id=="166" | omit_df$id=="167" | omit_df$id=="168"| omit_df$id=="223" | omit_df$id=="226" |omit_df$id=="252" | omit_df$id=="256" | omit_df$id=="259" | omit_df$id=="268" | omit_df$id=="278" | omit_df$id=="334" |omit_df$id=="363" |omit_df$id=="365" | omit_df$id=="376"),]
-
-#What does it look like now?
-
-GCSModel2 <- lm(logCOVID_DoG_index ~ GCS_index, data = omit_df_final)
-
-summary(GCSModel2)
-
-plot(GCSModel2)
-
-bptest(GCSModel2)
-
-#no hetero
-
-#any remaining outliers?
-
-outlierTest(GCSModel2)
-
-#all good!
-
-plot(logCOVID_DoG_index ~ GCS_index, data =  omit_df_final)
-abline(GCSModel2)
-
-```
-
 
 ### Norms and Political Oreintation (Everett 2013): Conservatives will report norms that favor immediate gratification. 
 
