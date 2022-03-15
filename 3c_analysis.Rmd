@@ -400,6 +400,39 @@ bptest(MFTModel1)
 
 #4 No dots outside of cooks line. good! 
 
+#Do we have outliers?
+
+outlierTest(MFTModel1)
+
+#outliers == 253,10,59
+
+omit_df_MFTModel1_outliers <-omit_df[!(omit_df$id=="19" | omit_df$id=="69" |omit_df$id=="268" |omit_df$id=="166" |omit_df$id=="142"|omit_df$id=="278" |omit_df$id=="54"|omit_df$id=="252" |omit_df$id=="167"|omit_df$id=="119" |omit_df$id=="20" |omit_df$id=="226" |omit_df$id=="25" |omit_df$id=="36" |omit_df$id=="61"),]
+
+ MFTModel2 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation, data = omit_df_MFTModel1_outliers)
+
+#do we have any other ouliers?
+ 
+outlierTest(MFTModel2)
+
+#outiers == 156, 132, 262, 44, 238, 157, 109, 11, 212, 15, 26, 51
+               
+summary(MFTModel2)
+
+plot(MFTModel2)
+
+#1 Residuals Plot: Relatively flat  
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning and end which has still has some falling off
+
+#3 Scale-Location:homoscedasticity test. Not a flat line. Concerning.
+
+bptest(MFTModel1)
+
+#bptest is still sig! 
+
+#4 No dots outside of cooks line. good
+
+
 ```
 
 #### MFT, Political Orientation, and DoG: Conservative ideology will be more predictive than the Harm/Purity foundation in predicting COVID19 DoG.
@@ -471,6 +504,11 @@ bptest(MFTModel5)
 
 #4 No dots outside of cooks line. good! 
 
+#Are there outliers?
+
+outlierTest(MFTModel5)
+
+#no outliers 
 ```
 
 
