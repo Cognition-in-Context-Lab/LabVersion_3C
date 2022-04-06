@@ -21,7 +21,8 @@ library(Hmisc)
 library(dplyr)
 ```
 
-# Processing
+# Processing. Codebook can be found here: https://docs.google.com/document/d/1P3mAw_hSos0rTQp9I4ItetfMY8JgSN9atARJWKJZeog/edit?usp=sharing
+
 ## Load and Cleanup Data
 
 ```{r}
@@ -59,10 +60,6 @@ df <- df[ , !names(df) %in% unneeded_cols]
 df <- df[ , !names(df) %in% NAcols]
 
 #411 participants are now left out of the original 442
-
-#create ID for each participant
-
-df <- mutate(df, id = rownames(df))
 
 
 ```
@@ -161,7 +158,10 @@ sapply(omit_df, class) # all numeric!
 omit_df$attentioncheck_1 #all 4s
 omit_df$attentioncheck_2 #all 3s
 
-omit_df <- mutate(omit_df, id = rownames(omit_df))
+#create id for each participant
+
+omit_df <- tibble::rowid_to_column(omit_df, "id")
+omit_df
 
 ```
 
@@ -351,7 +351,6 @@ head(MCQdata)
 #Arrange columns in ideal order
 MCQdata <- MCQdata[c(13,9,10,11,12,5,6,7,8,1,2,3,4)]
 
-
 #add MCQ to omit_df
 
 omit_df <- omit_df %>%
@@ -387,6 +386,40 @@ omit_df <- omit_df %>%
 mini_df <- omit_df %>% select(LrgICR, MedICR, SmlICR)
 omit_df <- omit_df %>% mutate(MeanICR = rowMeans(mini_df),
                               .before = MCQ_27)
+
+# add cons to omit_df
+
+omit_df <- omit_df %>%
+  add_column(SmlCons = MCQdata$SmlCons,
+             .after = "MCQ_27") 
+
+omit_df <- omit_df%>%
+  add_column(MedCons = MCQdata$MedCons,
+             .after = "MCQ_27") 
+
+omit_df <- omit_df %>%
+  add_column(LrgCons = MCQdata$LrgCons,
+             .after = "MCQ_27") 
+
+#what are the cons scores looking like?
+
+histogram(omit_df$SmlCons)
+histogram(omit_df$MedCons)
+histogram(omit_df$LrgCons)
+
+#Let's remove any of the values that are below .80 cons score across the values
+
+omit_df[omit_df$SmlCons < .8,]
+omit_df[omit_df$MedCons < .8,]
+omit_df[omit_df$LrgCons < .8,]
+
+
+#new low cons scores == 11, 16, 23, 68, 71 86, 108, 178, 249 250
+
+omit_df <- omit_df[!(omit_df$id=="11" | omit_df$id=="68"| omit_df$id=="86" | omit_df$id=="108" | omit_df$id=="250" | omit_df$id=="16" | omit_df$id=="23" | omit_df$id=="71" | omit_df$id=="178" | omit_df$id=="249"),]
+
+
+
 
 ```
 
