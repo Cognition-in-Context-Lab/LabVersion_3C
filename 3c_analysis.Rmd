@@ -156,7 +156,7 @@ omit_df %>%
 
 ```{r}
 
-omit_df$Political_Orient_Cat = ifelse((omit_df$Measure2_liberal_Index > omit_df$Measure2_cons_Index) & (omit_df$Measure2_liberal_Index > omit_df$Measure2_liberterian_Index), 'liberal',
+omit_df$Political_Orient_Lib_Base = ifelse((omit_df$Measure2_liberal_Index > omit_df$Measure2_cons_Index) & (omit_df$Measure2_liberal_Index > omit_df$Measure2_liberterian_Index), 'liberal',
                       ifelse((omit_df$Measure2_cons_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_cons_Index > omit_df$Measure2_liberterian_Index), 'zconservative', 
                       ifelse((omit_df$Measure2_liberterian_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_liberterian_Index > omit_df$Measure2_cons_Index),'libertarian', 'none')))
 
@@ -199,7 +199,6 @@ bptest(GCSModel1)
 outlierTest(GCSModel1)
 
 #outliers == no outliers 
-
 
 coeftest(GCSModel1, vcov = vcovHC(GCSModel1, "HC1")) 
 
@@ -265,7 +264,6 @@ MCQModelRaw <- ggplot(omit_df, aes(x= logCOVID_DoG_index, y= logMeanK)) +
 
 MCQModelRaw + geom_label_repel(data = subset(MCQMOdeloutliers), aes(label = "outlier", size = NULL, color = NULL))
 
-
 MCQModel1 <- lm(logCOVID_DoG_index ~ logMeanK, data =  omit_df)
 
 summary(MCQModel1)
@@ -288,7 +286,7 @@ outlierTest(MCQModel1)
 
 # What does it look like if we remove outliers?
 
-omit_df_MCQModel2_outliers <-omit_df[!(omit_df$id=="226" | omit_df$id=="268" |omit_df$id=="278" |omit_df$id=="69" | omit_df$id=="25" |omit_df$id=="36" |omit_df$id=="54" | omit_df$id=="166" |omit_df$id=="167" |omit_df$id=="19" | omit_df$id=="119" |omit_df$id=="142" | omit_df$id=="252" |omit_df$id=="20" | omit_df$id=="61"),]
+omit_df_MCQModel2_outliers <-omit_df[!(omit_df$id=="213" | omit_df$id=="262" |omit_df$id=="253" |omit_df$id=="59" | omit_df$id=="15" |omit_df$id=="26" | omit_df$id=="10" | omit_df$id=="44" |omit_df$id=="109" |omit_df$id=="132" | omit_df$id=="156" |omit_df$id=="157" |omit_df$id=="51" |omit_df$id=="238" |omit_df$id=="212"),]
 
 MCQModel2 <- lm(logCOVID_DoG_index ~ logMeanK, data =  omit_df_MCQModel2_outliers)
 
@@ -311,7 +309,7 @@ plot(logCOVID_DoG_index ~ logMeanK, data =  omit_df)
 abline(MCQModel1)
 
 ##model 2
-plot(logCOVID_DoG_index ~ logMeanK, data =  omit_df)
+plot(logCOVID_DoG_index ~ logMeanK, data =  omit_df_MCQModel2_outliers)
 abline(MCQModel2)
 ```
 
@@ -319,8 +317,7 @@ abline(MCQModel2)
 
 ```{r}
 
-
-PoliticalOrientationModel1  = lm(logCOVID_DoG_index ~ Political_Orient_Cat, data = omit_df)
+PoliticalOrientationModel1  = lm(logCOVID_DoG_index ~ Political_Orient_Lib_Base, data = omit_df)
 
 summary(PoliticalOrientationModel1)
 
@@ -421,9 +418,11 @@ bptest(MFTModel1)
 
 outlierTest(MFTModel1)
 
-#outliers == 253,10,59
+#outliers == 243,10,56
 
-omit_df_MFTModel1_outliers <-omit_df[!(omit_df$id=="19" | omit_df$id=="69" |omit_df$id=="268" |omit_df$id=="166" |omit_df$id=="142"|omit_df$id=="278" |omit_df$id=="54"|omit_df$id=="252" |omit_df$id=="167"|omit_df$id=="119" |omit_df$id=="20" |omit_df$id=="226" |omit_df$id=="25" |omit_df$id=="36" |omit_df$id=="61"),]
+omit_df_MFTModel1_outliers <-omit_df[!(omit_df$id=="10" | omit_df$id=="253" |omit_df$id=="59" |omit_df$id=="132" |omit_df$id=="156" |omit_df$id=="262"|omit_df$id=="44" |omit_df$id=="109" |omit_df$id=="157" |omit_df$id=="238" |omit_df$id=="15" |omit_df$id=="212"|omit_df$id=="26"|omit_df$id=="51"),]
+
+#omit_df_MFTModel1_outliers <-omit_df[!(omit_df$id=="19" | omit_df$id=="69" |omit_df$id=="268" |omit_df$id=="166" |omit_df$id=="142"|omit_df$id=="278" |omit_df$id=="54"|omit_df$id=="252" |omit_df$id=="167"|omit_df$id=="119" |omit_df$id=="20" |omit_df$id=="226" |omit_df$id=="25" |omit_df$id=="36" |omit_df$id=="61"),]
 
  MFTModel2 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation, data = omit_df_MFTModel1_outliers)
 
@@ -431,7 +430,7 @@ omit_df_MFTModel1_outliers <-omit_df[!(omit_df$id=="19" | omit_df$id=="69" |omit
  
 outlierTest(MFTModel2)
 
-#outiers == 156, 132, 262, 44, 238, 157, 109, 11, 212, 15, 26, 51
+#outiers == 125, 149, 252, 41, 230, 150, 102, 14, 204, 23, 48
                
 summary(MFTModel2)
 
