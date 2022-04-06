@@ -43,11 +43,14 @@ omit_df <- read.csv("omit_df.csv", header=T, na.strings="")
 
 ## Summary statistics
 ```{r}
+
 #MCQ
 
 mean(omit_df$logMeanK)
 
-#Mean discounting on MCQ = -4.877
+histogram(omit_df$logMeanK)
+
+#Mean discounting on MCQ = -4.906, fairly normal distrubution 
 
 ```
 
@@ -56,9 +59,9 @@ mean(omit_df$logMeanK)
 ```{r}
 ## number of included participants
 #study requested 400 participants: 
-#original df dataset had 444 rows, removed 51 rows in processing script (unneeded rows, incomplete trials, and too short or too long entries) = 393 rows 
+#original df dataset had 444 rows, removed 61 rows in processing script (unneeded rows, incomplete trials, low cons scores for MCQ and too short or too long entries) = 383 rows 
 
-nrow(omit_df) # 393 rows
+nrow(omit_df) # 383 rows
 
 #duration, demographics
 
@@ -146,6 +149,17 @@ omit_df %>%
                ) %>%
   group_by(politics,response) %>%
   summarise(count=n())
+
+```
+
+#Creating dummy variables for political oreintation 
+
+```{r}
+
+omit_df$Political_Orient_Cat = ifelse((omit_df$Measure2_liberal_Index > omit_df$Measure2_cons_Index) & (omit_df$Measure2_liberal_Index > omit_df$Measure2_liberterian_Index), 'liberal',
+                      ifelse((omit_df$Measure2_cons_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_cons_Index > omit_df$Measure2_liberterian_Index), 'zconservative', 
+                      ifelse((omit_df$Measure2_liberterian_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_liberterian_Index > omit_df$Measure2_cons_Index),'libertarian', 'none')))
+
 
 ```
 
@@ -288,8 +302,6 @@ outlierTest(MCQModel2)
 
 #All good now!
 
-
-
 ```
 
 ```{r}
@@ -306,6 +318,11 @@ abline(MCQModel2)
 ### COVID DoG and Poltiical Orientation (Everett 2013): Individuals will vary systematically in COVID Specific DoG and norms by political orientation. Specifically,  Conservatives will delay less than Liberals on the COVID19 DoG task and report norms that favor immediate gratification. In addition, conservative ideology will be more predictive than the Harm/Purity foundation in predicting COVID19 DoG.
 
 ```{r}
+
+
+PoliticalOrientationModel1  = lm(logCOVID_DoG_index ~ Political_Orient_Cat, data = omit_df)
+
+summary(PoliticalOrientationModel1)
 
 PoliticalOrientationModel1 <- lm(logCOVID_DoG_index ~ Measure5_Social_Index + Measure5_Political_Index, data = omit_df)
 
