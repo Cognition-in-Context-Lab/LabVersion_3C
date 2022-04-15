@@ -160,6 +160,13 @@ omit_df$Political_Orient_Lib_Base = ifelse((omit_df$Measure2_liberal_Index > omi
                       ifelse((omit_df$Measure2_cons_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_cons_Index > omit_df$Measure2_liberterian_Index), 'zconservative', 
                       ifelse((omit_df$Measure2_liberterian_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_liberterian_Index > omit_df$Measure2_cons_Index),'libertarian', 'none')))
 
+omit_df$Political_Orient_Cons_Base = ifelse((omit_df$Measure2_cons_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_cons_Index > omit_df$Measure2_liberterian_Index), 'conservative',
+                      ifelse((omit_df$Measure2_liberal_Index > omit_df$Measure2_cons_Index) & (omit_df$Measure2_liberal_Index > omit_df$Measure2_liberterian_Index), 'liberal', 
+                      ifelse((omit_df$Measure2_liberterian_Index > omit_df$Measure2_cons_Index) & (omit_df$Measure2_liberterian_Index > omit_df$Measure2_liberal_Index),'libertarian', 'none')))
+
+omit_df$Political_Orient_Libertarian_Base = ifelse((omit_df$Measure2_liberterian_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_libertarian_Index > omit_df$Measure2_cons_Index), 'libertarian',
+                      ifelse((omit_df$Measure2_cons_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_cons_Index > omit_df$Measure2_liberterian_Index), 'conservative', 
+                      ifelse((omit_df$Measure2_liberal_Index > omit_df$Measure2_cons_Index) & (omit_df$Measure2_liberal_Index > omit_df$Measure2_libertarian_Index),'liberal', 'none')))
 
 ```
 
@@ -313,36 +320,58 @@ plot(logCOVID_DoG_index ~ logMeanK, data =  omit_df_MCQModel2_outliers)
 abline(MCQModel2)
 ```
 
-### COVID DoG and Poltiical Orientation (Everett 2013): Individuals will vary systematically in COVID Specific DoG and norms by political orientation. Specifically,  Conservatives will delay less than Liberals on the COVID19 DoG task and report norms that favor immediate gratification. In addition, conservative ideology will be more predictive than the Harm/Purity foundation in predicting COVID19 DoG.
+### COVID DoG and Poltiical Orientation (Diaz 2020): Individuals will vary systematically in COVID Specific DoG and norms by political orientation. Specifically,  Conservatives will delay less than Liberals on the COVID19 DoG task and report norms that favor immediate gratification. In addition, conservative ideology will be more predictive than the Harm/Purity foundation in predicting COVID19 DoG.
 
 ```{r}
+
+#lbieral base
 
 PoliticalOrientationModel1  = lm(logCOVID_DoG_index ~ Political_Orient_Lib_Base, data = omit_df)
 
 summary(PoliticalOrientationModel1)
 
-PoliticalOrientationModel1 <- lm(logCOVID_DoG_index ~ Measure5_Social_Index + Measure5_Political_Index, data = omit_df)
-
-summary(PoliticalOrientationModel1)
-
 plot(PoliticalOrientationModel1)
+
+#1 Residuals Plot: flat 
+
+#2 QQ Plot: some falling off in the beggining 
+
+#3 Scale-Location: flat
 
 bptest(PoliticalOrientationModel1)
 
+#sig result, so hetero present. 
 
-#1 Residuals Plot: Linear assumption met, flat line w/ no patterns.
-
-#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning with some severe falling off. 
-
-#3 Scale-Location:homoscedasticity test. Relativity flat line. Sig number in BP test.
-
-#4 No dots outside of cooks line. good! 
+#4dots outside of cooks line? Nope! 
 
 outlierTest(PoliticalOrientationModel1)
 
-#outliers == 10
+#outliers == 10, 41, 204, 230, 204
 
 #Need to remove outliers
+
+omit_df_libbase_outliers <-omit_df[!(omit_df$id=="10" | omit_df$id=="44" | omit_df$id=="211" | omit_df$id=="238" | omit_df$id=="212"),]
+
+PoliticalOrientationModel2  = lm(logCOVID_DoG_index ~ Political_Orient_Lib_Base, data = omit_df_libbase_outliers)
+
+outlierTest(PoliticalOrientationModel2)
+
+summary(PoliticalOrientationModel2)
+
+plot(PoliticalOrientationModel2)
+
+#1 Residuals Plot: flat 
+
+#2 QQ Plot: some falling off in the beggining 
+
+#3 Scale-Location: flat
+
+bptest(PoliticalOrientationModel1)
+
+#sig result, so hetero present. 
+
+#4dots outside of cooks line? Nope! 
+
 
 #We got a serious case of heteroscedaciity folks. What does a model with robust standard errors look like? 
 
@@ -352,43 +381,144 @@ coeftest(PoliticalOrientationModel2, vcov = vcovHC(PoliticalOrientationModel2, "
 
 summary(PoliticalOrientationModel2) 
 
-#Model adjusted slightly, but relatively the same
-
+#Relativey the same results, no need to worry about reporting hetero controlling model 
 
 ```
 
-### other political variable (Diaz 2020): Individuals will vary systematically in COVID Specific DoG and norms by political orientation. Specifically,  Conservatives will delay less than Liberals on the COVID19 DoG task and report norms that favor immediate gratification. In addition, conservative ideology will be more predictive than the Harm/Purity foundation in predicting COVID19 DoG. 
-
 ```{r}
 
-PoliticalOrientationModel3 <- lm(logCOVID_DoG_index ~ Measure2_liberterian_Index + Measure2_liberal_Index + Measure2_cons_Index , data = omit_df)
+#cons base
+
+PoliticalOrientationModel3  = lm(logCOVID_DoG_index ~ Political_Orient_Cons_Base, data = omit_df)
 
 summary(PoliticalOrientationModel3)
 
 plot(PoliticalOrientationModel3)
 
-outlierTest(PoliticalOrientationModel3)
+#1 Residuals Plot: flat 
 
-#1 Residuals Plot: Linear assumption met, flat line w/ no patterns.
+#2 QQ Plot: some falling off in the beggining 
 
-#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for some falling towards the end 
-
-#3 Scale-Location:homoscedasticity test. Relatively flat line. 
+#3 Scale-Location: flat
 
 bptest(PoliticalOrientationModel3)
 
-#we got heteroscedasticity
+#sig result, so hetero present. 
+
+#4 dots outside of cooks line? Nope! 
+
+outlierTest(PoliticalOrientationModel3)
+
+##outliers == 10, 41, 204, 230
+
+omit_df_consbase_outliers <-omit_df[!(omit_df$id=="10" | omit_df$id=="44" | omit_df$id=="212" | omit_df$id=="238"),]
+
+PoliticalOrientationModel4  = lm(logCOVID_DoG_index ~ Political_Orient_Lib_Base, data = omit_df_consbase_outliers)
+
+outlierTest(PoliticalOrientationModel4)
+
+summary(PoliticalOrientationModel4)
+
+plot(PoliticalOrientationModel4)
+
+#1 Residuals Plot: flat 
+
+#2 QQ Plot: some falling off in the beggining 
+
+#3 Scale-Location: flat
+
+bptest(PoliticalOrientationModel4)
+
+#sig result, so hetero present. 
+
+#4 dots outside of cooks line? Nope! 
+
+coeftest(PoliticalOrientationModel4, vcov = vcovHC(PoliticalOrientationModel4, "HC1")) 
+
+summary(PoliticalOrientationModel4) 
+
+#Relativey the same results, no need to worry about reporting hetero controlling model 
+
+
+```
+
+```{r}
+
+#libert base
+
+PoliticalOrientationModel5  = lm(logCOVID_DoG_index ~ Political_Orient_Libertarian_Base, data = omit_df)
+
+summary(PoliticalOrientationModel5)
+
+plot(PoliticalOrientationModel5)
+
+bptest(PoliticalOrientationModel5)
+
+outlierTest(PoliticalOrientationModel5)
+
+coeftest(PoliticalOrientationModel5, vcov = vcovHC(PoliticalOrientationModel3, "HC1")) 
+
+summary(PoliticalOrientationModel5) 
+
+```
+
+### other political variable (Everett 2013): Individuals will vary systematically in COVID Specific DoG and norms by political orientation. Specifically,  Conservatives will delay less than Liberals on the COVID19 DoG task and report norms that favor immediate gratification. In addition, conservative ideology will be more predictive than the Harm/Purity foundation in predicting COVID19 DoG. 
+
+```{r}
+
+PoliticalOrientationModel7 <- lm(logCOVID_DoG_index ~ Measure5_Social_Index + Measure5_Political_Index, data = omit_df)
+
+summary(PoliticalOrientationModel7)
+
+plot(PoliticalOrientationModel7)
+
+#1 Residuals Plot: Linear assumption met, flat line w/ no patterns.
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for some off in the beggining
+
+#3 Scale-Location:homoscedasticity test. Ehhh... 
+
+bptest(PoliticalOrientationModel7)
+
+#we got heteroscedasticity!
 
 #4 No dots outside of cooks line. good! 
 
-coeftest(PoliticalOrientationModel3, vcov = vcovHC(PoliticalOrientationModel3, "HC1")) 
+outlierTest(PoliticalOrientationModel7)
+
+#outliers == #10.. and more...
+
+omit_df_Everett_outliers <-omit_df[!(omit_df$id=="10" | omit_df$id=="109" | omit_df$id=="212" | omit_df$id=="253" | omit_df$id=="238" | omit_df$id=="59" | omit_df$id=="156" | omit_df$id=="157" | omit_df$id=="26" | omit_df$id=="44" | omit_df$id=="15" | omit_df$id=="262" | omit_df$id=="51" | omit_df$id=="132"),]
+
+PoliticalOrientationModel8 <- lm(logCOVID_DoG_index ~ Measure5_Social_Index + Measure5_Political_Index, data = omit_df_Everett_outliers)
+
+outlierTest(PoliticalOrientationModel8)
+
+summary(PoliticalOrientationModel8)
+
+plot(PoliticalOrientationModel8)
+
+#1 Residuals Plot: Linear assumption met, flat line w/ no patterns.
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for some off in the beggining
+
+#3 Scale-Location:homoscedasticity test. Ehhh... 
+
+bptest(PoliticalOrientationModel8)
+
+#we got heteroscedasticity!
+
+#4 No dots outside of cooks line. good! 
+
+#to control for the hederoscadicity, lets see what this model below compares to the regular model:
+
+coeftest(PoliticalOrientationModel8, vcov = vcovHC(PoliticalOrientationModel8, "HC1")) 
 
 #vs
 
-summary(PoliticalOrientationModel3) 
+summary(PoliticalOrientationModel8) 
 
-#Liberal Index is now significant, as well as the cons index is still sig. 
-
+#Relativey the same results, no need to worry about reporting hetero controlling model 
 
 ```
 
@@ -546,29 +676,36 @@ plot(SocialDesirabilityModel)
 
 #4 No dots outside of cooks line. good! 
 
-##Looking into closer to residuals not being normally distributed 
-
 #Are there outliers in the model?
 
 outlierTest(SocialDesirabilityModel)
 
-leveragePlots(SocialDesirabilityModel)
+#outliers == 56, 149, 204
 
 #what does it look like when we remove those outliers?
 
-SocialDesirabilityModel2 <- lm(logCOVID_DoG_index ~ SDRS_Sum_scaled, data = omit_df_final)
+omit_df_sd_outliers <-omit_df[!(omit_df$id=="59" | omit_df$id=="156" | omit_df$id=="212" | omit_df$id=="262" | omit_df$id=="26" | omit_df$id=="44" | omit_df$id=="132" | omit_df$id=="157" | omit_df$id=="10" | omit_df$id=="15" | omit_df$id=="109" | omit_df$id=="253"  | omit_df$id=="238" | omit_df$id=="51"),]
+
+SocialDesirabilityModel2 <- lm(logCOVID_DoG_index ~ SDRS_Sum_scaled, data = omit_df_sd_outliers)
+
+outlierTest(SocialDesirabilityModel2)
 
 summary(SocialDesirabilityModel2)
 
 plot(SocialDesirabilityModel2)
 
-outlierTest(SocialDesirabilityModel2)
+#1 Residuals Plot: Linear assumption met, flat line w/ no patterns.
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning with some  falling off. 
+
+#3 Scale-Location:homoscedasticity test. Relativity flat line. 
 
 bptest(SocialDesirabilityModel2)
 
 #no hetero
 
-#The QQ plot looks a lot better and there are no remaining outliers. 
+#4 No dots outside of cooks line. good! 
+
 
 ```
 
@@ -581,31 +718,39 @@ summary(NormsModel1)
 
 plot(NormsModel1)
 
-#1 Residuals Plot: Linear assumption met, flat line w/ no patterns.
+#1 Residuals Plot: Linear assumption met, flat line w/ grouping torwards the end 
 
-#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning with some severe falling off. 
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning with some falling off. 
 
 #3 Scale-Location:homoscedasticity test. Not a flat line, concerning. 
 
 #4 No dots outside of cooks line. good! 
 
-#lets see what things look like using the final dataset 
+#are there outliers?
 
-NormsModel2 <- lm(logCOVID_DoG_index ~ FamilyNorm_index + FriendsNorm_index + StrangerNorm_index, data = omit_df_final)
+outlierTest(NormsModel1)
+
+#outliers == 10, 102, 230, 243
+
+omit_df_norm_outliers <-omit_df[!(omit_df$id=="10" | omit_df$id=="109" | omit_df$id=="238" | omit_df$id=="253"),]
+
+NormsModel2 <- lm(logCOVID_DoG_index ~ FamilyNorm_index + FriendsNorm_index + StrangerNorm_index, data = omit_df_norm_outliers)
+
+outlierTest(NormsModel2)
 
 summary(NormsModel2)
 
 plot(NormsModel2)
 
-#1 Residuals Plot: Linear assumption met, flat line w/ no patterns.
+#1 Residuals Plot: Linear assumption met, flat line w/ distribution centered towards the end
 
-#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part!
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? Some falling off in the beggining 
 
-#3 Scale-Location:homoscedasticity test. Relatively flat! 
+#3 Scale-Location:homoscedasticity test. not flat at all
 
 bptest(NormsModel2)
 
-#just barely sig!
+#hetero present
 
 #4 No dots outside of cooks line. good! 
 
@@ -615,16 +760,15 @@ coeftest(NormsModel2, vcov = vcovHC(NormsModel2, "HC1"))
 
 summary(NormsModel2) 
 
-#same significance, just different levels of sig
-
+#same significance, just different levels of sig. No need to report 
 
 ```
 
-### COVID DoG, Stress, Experience, and Impact: Individuals with more experience, impact, and stress with COVID will delay more on the COVID specific DoG task. 
+### COVID DoG, Stress and Impact: Individuals with more impact and stress with COVID will delay more on the COVID specific DoG task. 
 
 ```{r}
 
-COVIDImpactStress <- lm(logCOVID_DoG_index ~ Impacts_index + Stress_index + Personal_Diagnoses_index + Proximity_to_others_index + News_index, data = omit_df_final) 
+COVIDImpactStress <- lm(logCOVID_DoG_index ~ Impacts_index + Stress_index, data = omit_df) 
 
 summary(COVIDImpactStress)
 
@@ -632,15 +776,40 @@ plot(COVIDImpactStress)
 
 #1 Residuals Plot: Relatively flat  
 
-#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? Good!
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? Falling off early, but good other than that
 
 #3 Scale-Location: Relatively flat line. 
 
 bptest(COVIDImpactStress)
 
-#no heteroscadicity! 
+##just barely sig
 
 #4 No dots outside of cooks line. good! 
+
+outlierTest(COVIDImpactStress)
+
+omit_df_impactstress_outliers <-omit_df[!(omit_df$id=="253" | omit_df$id=="262"  | omit_df$id=="157" | omit_df$id=="156"  | omit_df$id=="51" | omit_df$id=="59"  | omit_df$id=="109"  | omit_df$id=="15" | omit_df$id=="10" | omit_df$id=="26"  | omit_df$id=="44" | omit_df$id=="132"  | omit_df$id=="212"  | omit_df$id=="238" | omit_df$id=="315" | omit_df$id=="344"| omit_df$id=="357"),]
+
+COVIDImpactStress2 <- lm(logCOVID_DoG_index ~ Impacts_index + Stress_index, data = omit_df_impactstress_outliers) 
+
+outlierTest(COVIDImpactStress2)
+
+summary(COVIDImpactStress2)
+
+plot(COVIDImpactStress2)
+
+#1 Residuals Plot: Relatively flat  
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? Falling off early, but good other than that
+
+#3 Scale-Location: Relatively flat line. 
+
+bptest(COVIDImpactStress2)
+
+#not sig
+
+#4 No dots outside of cooks line. good! 
+
 
 ```
 
