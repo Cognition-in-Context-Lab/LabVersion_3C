@@ -155,22 +155,17 @@ omit_df %>%
 #Creating dummy variables for political oreintation 
 
 ```{r}
-omit_df$Political_Orient_Libertarian_Base = NA 
 
-omit_df$Political_Orient_Libertarian_Base =  ifelse((omit_df$Measure2_liberterian_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_libertarian_Index > omit_df$Measure2_cons_Index), 'libertarian',
-                         ifelse((omit_df$Measure2_cons_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_cons_Index > omit_df$Measure2_liberterian_Index), 'conservative', 
-                      ifelse((omit_df$Measure2_liberal_Index > omit_df$Measure2_cons_Index) & (omit_df$Measure2_liberal_Index > omit_df$Measure2_libertarian_Index),'liberal', 'none')))
+#make dummy codes for political orientation
+omit_df$libertarian_dummy<-ifelse((omit_df$Measure2_liberterian_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_liberterian_Index > omit_df$Measure2_cons_Index),1,0)
 
-omit_df$Political_Orient_Lib_Base = ifelse((omit_df$Measure2_liberal_Index > omit_df$Measure2_cons_Index) & (omit_df$Measure2_liberal_Index > omit_df$Measure2_liberterian_Index), 'liberal',
-                      ifelse((omit_df$Measure2_cons_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_cons_Index > omit_df$Measure2_liberterian_Index), 'conservative', 
-                      ifelse((omit_df$Measure2_liberterian_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_liberterian_Index > omit_df$Measure2_cons_Index),'libertarian', 'none')))
+omit_df$liberal_dummy<-ifelse((omit_df$Measure2_liberal_Index > omit_df$Measure2_cons_Index) & (omit_df$Measure2_liberal_Index > omit_df$Measure2_liberterian_Index),1,0)
 
-omit_df$Political_Orient_Cons_Base = ifelse((omit_df$Measure2_cons_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_cons_Index > omit_df$Measure2_liberterian_Index), 'conservative',
-                      ifelse((omit_df$Measure2_liberal_Index > omit_df$Measure2_cons_Index) & (omit_df$Measure2_liberal_Index > omit_df$Measure2_liberterian_Index), 'liberal', 
-                      ifelse((omit_df$Measure2_liberterian_Index > omit_df$Measure2_cons_Index) & (omit_df$Measure2_liberterian_Index > omit_df$Measure2_liberal_Index),'libertarian', 'none')))
+omit_df$conservative_dummy<-ifelse((omit_df$Measure2_cons_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_cons_Index > omit_df$Measure2_liberterian_Index),1,0)
+
+omit_df$none_dummy<-ifelse(omit_df$conservative_dummy==0 & omit_df$liberal_dummy==0 & omit_df$libertarian_dummy==0,1,0)
 
 ```
-
 ## Linear Regressions. 1. Hypotheses can be found here: https://docs.google.com/spreadsheets/d/13zLnwjl7KTG4vASnhsG4ksfv95MHUM-4k6LtwOfnhho/edit?usp=sharing 2. Analysis documentation can be found here: https://docs.google.com/document/d/1ktOSEvA9BqKJ9pxmGovnPosLf7GjM64UDgwlBucpqU4/edit?usp=sharing
 
 ## Main Models of Interest 
@@ -327,7 +322,7 @@ abline(MCQModel2)
 
 #lbieral base
 
-PoliticalOrientationModel1  = lm(logCOVID_DoG_index ~ Political_Orient_Lib_Base, data = omit_df)
+PoliticalOrientationModel1  = lm(logCOVID_DoG_index ~ conservative_dummy + libertarian_dummy +none_dummy, data = omit_df)
 
 summary(PoliticalOrientationModel1)
 
@@ -347,13 +342,13 @@ bptest(PoliticalOrientationModel1)
 
 outlierTest(PoliticalOrientationModel1)
 
-#outliers == 10, 41, 204, 230, 204
+#outliers == 10, 41, 204, 230, 
 
 #Need to remove outliers
 
-omit_df_libbase_outliers <-omit_df[!(omit_df$id=="10" | omit_df$id=="44" | omit_df$id=="211" | omit_df$id=="238" | omit_df$id=="212"),]
+omit_df_libbase_outliers <-omit_df[!(omit_df$id=="10" | omit_df$id=="44"| omit_df$id=="238"  | omit_df$id=="212"),]
 
-PoliticalOrientationModel2  = lm(logCOVID_DoG_index ~ Political_Orient_Lib_Base, data = omit_df_libbase_outliers)
+PoliticalOrientationModel2  = lm(logCOVID_DoG_index ~ conservative_dummy + libertarian_dummy +none_dummy, data = omit_df_libbase_outliers)
 
 outlierTest(PoliticalOrientationModel2)
 
@@ -367,7 +362,7 @@ plot(PoliticalOrientationModel2)
 
 #3 Scale-Location: flat
 
-bptest(PoliticalOrientationModel1)
+bptest(PoliticalOrientationModel2)
 
 #sig result, so hetero present. 
 
@@ -390,7 +385,7 @@ summary(PoliticalOrientationModel2)
 
 #cons base
 
-PoliticalOrientationModel3  = lm(logCOVID_DoG_index ~ Political_Orient_Cons_Base, data = omit_df)
+PoliticalOrientationModel3  = lm(logCOVID_DoG_index ~ liberal_dummy + libertarian_dummy +none_dummy, data = omit_df)
 
 summary(PoliticalOrientationModel3)
 
@@ -414,7 +409,7 @@ outlierTest(PoliticalOrientationModel3)
 
 omit_df_consbase_outliers <-omit_df[!(omit_df$id=="10" | omit_df$id=="44" | omit_df$id=="212" | omit_df$id=="238"),]
 
-PoliticalOrientationModel4  = lm(logCOVID_DoG_index ~ Political_Orient_Lib_Base, data = omit_df_consbase_outliers)
+PoliticalOrientationModel4  = lm(logCOVID_DoG_index ~ liberal_dummy + libertarian_dummy +none_dummy, data = omit_df_consbase_outliers)
 
 outlierTest(PoliticalOrientationModel4)
 
@@ -447,19 +442,53 @@ summary(PoliticalOrientationModel4)
 
 #libert base
 
-PoliticalOrientationModel5 <- lm(logCOVID_DoG_index ~ Political_Orient_Libertarian_Base, data = omit_df)
+PoliticalOrientationModel5 <- lm(logCOVID_DoG_index ~ conservative_dummy + none_dummy +liberal_dummy, data = omit_df)
 
 summary(PoliticalOrientationModel5)
 
 plot(PoliticalOrientationModel5)
 
+#1 Residuals Plot: flat 
+
+#2 QQ Plot: some falling off in the beggining 
+
+#3 Scale-Location: flat
+
 bptest(PoliticalOrientationModel5)
+
+#sig result, so hetero present. 
+
+#4 dots outside of cooks line? Nope! 
 
 outlierTest(PoliticalOrientationModel5)
 
-coeftest(PoliticalOrientationModel5, vcov = vcovHC(PoliticalOrientationModel3, "HC1")) 
+omit_df_libert_outliers <-omit_df[!(omit_df$id=="10" | omit_df$id=="44" | omit_df$id=="212" | omit_df$id=="238"),]
 
-summary(PoliticalOrientationModel5) 
+PoliticalOrientationModel6  = lm(logCOVID_DoG_index ~ conservative_dummy + none_dummy +liberal_dummy, data = omit_df_libert_outliers)
+
+outlierTest(PoliticalOrientationModel6)
+
+summary(PoliticalOrientationModel6)
+
+plot(PoliticalOrientationModel6)
+
+#1 Residuals Plot: flat 
+
+#2 QQ Plot: some falling off in the beggining 
+
+#3 Scale-Location: flat
+
+bptest(PoliticalOrientationModel6)
+
+#sig result, so hetero present. 
+
+#4 dots outside of cooks line? Nope! 
+
+coeftest(PoliticalOrientationModel6, vcov = vcovHC(PoliticalOrientationModel6, "HC1")) 
+
+summary(PoliticalOrientationModel6) 
+
+#Relativey the same results, no need to worry about reporting hetero controlling model 
 
 ```
 
