@@ -155,18 +155,19 @@ omit_df %>%
 #Creating dummy variables for political oreintation 
 
 ```{r}
+omit_df$Political_Orient_Libertarian_Base = NA 
+
+omit_df$Political_Orient_Libertarian_Base =  ifelse((omit_df$Measure2_liberterian_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_libertarian_Index > omit_df$Measure2_cons_Index), 'libertarian',
+                         ifelse((omit_df$Measure2_cons_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_cons_Index > omit_df$Measure2_liberterian_Index), 'conservative', 
+                      ifelse((omit_df$Measure2_liberal_Index > omit_df$Measure2_cons_Index) & (omit_df$Measure2_liberal_Index > omit_df$Measure2_libertarian_Index),'liberal', 'none')))
 
 omit_df$Political_Orient_Lib_Base = ifelse((omit_df$Measure2_liberal_Index > omit_df$Measure2_cons_Index) & (omit_df$Measure2_liberal_Index > omit_df$Measure2_liberterian_Index), 'liberal',
-                      ifelse((omit_df$Measure2_cons_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_cons_Index > omit_df$Measure2_liberterian_Index), 'zconservative', 
+                      ifelse((omit_df$Measure2_cons_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_cons_Index > omit_df$Measure2_liberterian_Index), 'conservative', 
                       ifelse((omit_df$Measure2_liberterian_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_liberterian_Index > omit_df$Measure2_cons_Index),'libertarian', 'none')))
 
 omit_df$Political_Orient_Cons_Base = ifelse((omit_df$Measure2_cons_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_cons_Index > omit_df$Measure2_liberterian_Index), 'conservative',
                       ifelse((omit_df$Measure2_liberal_Index > omit_df$Measure2_cons_Index) & (omit_df$Measure2_liberal_Index > omit_df$Measure2_liberterian_Index), 'liberal', 
                       ifelse((omit_df$Measure2_liberterian_Index > omit_df$Measure2_cons_Index) & (omit_df$Measure2_liberterian_Index > omit_df$Measure2_liberal_Index),'libertarian', 'none')))
-
-omit_df$Political_Orient_Libertarian_Base = ifelse((omit_df$Measure2_liberterian_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_libertarian_Index > omit_df$Measure2_cons_Index), 'libertarian',
-                      ifelse((omit_df$Measure2_cons_Index > omit_df$Measure2_liberal_Index) & (omit_df$Measure2_cons_Index > omit_df$Measure2_liberterian_Index), 'conservative', 
-                      ifelse((omit_df$Measure2_liberal_Index > omit_df$Measure2_cons_Index) & (omit_df$Measure2_liberal_Index > omit_df$Measure2_libertarian_Index),'liberal', 'none')))
 
 ```
 
@@ -446,7 +447,7 @@ summary(PoliticalOrientationModel4)
 
 #libert base
 
-PoliticalOrientationModel5  = lm(logCOVID_DoG_index ~ Political_Orient_Libertarian_Base, data = omit_df)
+PoliticalOrientationModel5 <- lm(logCOVID_DoG_index ~ Political_Orient_Libertarian_Base, data = omit_df)
 
 summary(PoliticalOrientationModel5)
 
@@ -572,7 +573,7 @@ plot(MFTModel2)
 
 #3 Scale-Location:homoscedasticity test. Not a flat line. Concerning.
 
-bptest(MFTModel1)
+bptest(MFTModel2)
 
 #bptest is still sig! 
 
@@ -587,43 +588,30 @@ bptest(MFTModel1)
 
 #Do these effects still remain when doing a multiple linear regression w/ political ideology included? (Diaz 2020)
 
- MFTModel2 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation +Measure2_liberterian_Index + Measure2_liberal_Index + Measure2_cons_Index , data = omit_df)
-               
-summary(MFTModel2)
+#lib base
 
-plot(MFTModel2)
-
-#1 Residuals Plot: Relatively flat  
-
-#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning which has some severe falling off.  
-
-#3 Scale-Location:homoscedasticity test. Not a flat line. Concerning.
-
-bptest(MFTModel2)
-
-#bptest is sig! 
-
-#4 No dots outside of cooks line. good! 
-
-#What about if we do the other political ideology measure? (Evertt 2013)
-
-MFTModel3 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation + Measure5_Social_Index + Measure5_Political_Index, data = omit_df)
+ MFTModel3 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation + Political_Orient_Lib_Base, data = omit_df)
                
 summary(MFTModel3)
 
 plot(MFTModel3)
 
-#1 Residuals Plot: Relatively flat  
-
-#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning which has some severe falling off.  
-
-#3 Scale-Location:homoscedasticity test. Not a flat line. Concerning.
-
 bptest(MFTModel3)
 
-#bptest is sig! 
+#Cons base
 
-#4 No dots outside of cooks line. good! 
+MFTModel4 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation +Political_Orient_Cons_Base , data = omit_df)
+               
+summary(MFTModel4)
+
+plot(MFTModel4)
+
+bptest(MFTModel4)
+
+#libert base
+
+MFTModel5 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation +Political_Orient_Cons_Base , data = omit_df)
+
 ```
 
 ## other manuscript models 
@@ -632,11 +620,11 @@ bptest(MFTModel3)
 
 ```{r}
 
-MFTModel5 <- lm(logMeanK ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation, data = omit_df)
+MFTModel6 <- lm(logMeanK ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation, data = omit_df)
                
-summary(MFTModel5)
+summary(MFTModel6)
 
-plot(MFTModel5)
+plot(MFTModel6)
 
 #1 Residuals Plot: Relatively flat  
 
@@ -644,7 +632,7 @@ plot(MFTModel5)
 
 #3 Scale-Location:homoscedasticity test. Flat-ish line. 
 
-bptest(MFTModel5)
+bptest(MFTModel6)
 
 # No sig Bptest 
 
@@ -652,7 +640,7 @@ bptest(MFTModel5)
 
 #Are there outliers?
 
-outlierTest(MFTModel5)
+outlierTest(MFTModel6)
 
 #no outliers 
 ```
@@ -724,6 +712,7 @@ plot(NormsModel1)
 
 #3 Scale-Location:homoscedasticity test. Not a flat line, concerning. 
 
+
 #4 No dots outside of cooks line. good! 
 
 #are there outliers?
@@ -761,6 +750,60 @@ coeftest(NormsModel2, vcov = vcovHC(NormsModel2, "HC1"))
 summary(NormsModel2) 
 
 #same significance, just different levels of sig. No need to report 
+
+NormsModel3 <- lm(logCOVID_DoG_index ~ Norms_index , data = omit_df)
+
+summary(NormsModel3)
+
+plot(NormsModel3)
+
+#1 Residuals Plot: Linear assumption met, flat line w/ grouping torwards the end 
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning with some falling off. 
+
+#3 Scale-Location:homoscedasticity test. Not a flat line, concerning.
+
+bptest(NormsModel3)
+
+
+#4 No dots outside of cooks line. good! 
+
+#are there outliers?
+
+outlierTest(NormsModel3)
+
+#outliers == 10, 102, 230, 243
+
+omit_df_norm_outliers2 <-omit_df[!(omit_df$id=="10" | omit_df$id=="109" | omit_df$id=="238" | omit_df$id=="253"| omit_df$id=="51"),]
+
+NormsModel4 <- lm(logCOVID_DoG_index ~ Norms_index, data = omit_df_norm_outliers2)
+
+outlierTest(NormsModel4)
+
+summary(NormsModel4)
+
+plot(NormsModel4)
+
+#1 Residuals Plot: Linear assumption met, flat line w/ distribution centered towards the end
+
+#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? Some falling off in the beggining 
+
+#3 Scale-Location:homoscedasticity test. not flat at all
+
+bptest(NormsModel4)
+
+#hetero present
+
+#4 No dots outside of cooks line. good! 
+
+coeftest(NormsModel4, vcov = vcovHC(NormsModel4, "HC1")) 
+
+#vs
+
+summary(NormsModel4) 
+
+#same significance, just different levels of sig. No need to report 
+
 
 ```
 
@@ -865,96 +908,45 @@ plotCurves(stress_mod, plotx="Measure2_cons_Index", modx="Stress_index", interva
 
 ## Misc Models 
 
-### Norms and Political Oreintation (Everett 2013): Conservatives will report norms that favor immediate gratification. 
-
-```{r}
-
-PoliticalOrientationModel4 <- lm(Norms_index ~ Measure5_Social_Index + Measure5_Political_Index, data = omit_df)
-
-summary(PoliticalOrientationModel4)
-
-plot(PoliticalOrientationModel4)
-
-#1 Residuals Plot: Relatively flat line.   
-
-#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning and end, but not too bad. 
-
-#3 Scale-Location:homoscedasticity test. Relatively flat line. 
-
-#4 No dots outside of cooks line. good! 
-
-#What about final dataset?
-
-PoliticalOrientationModel5 <- lm(Norms_index ~ Measure5_Social_Index + Measure5_Political_Index, data = omit_df_final)
-
-summary(PoliticalOrientationModel5)
-
-plot(PoliticalOrientationModel5)
-
-outlierTest(PoliticalOrientationModel5)
-
-#1 Residuals Plot: relatively flat line -- linearity seems to be here! 
-
-#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning and end, but not too bad. 
-
-#3 Scale-Location:homoscedasticity test. Relativity flat line
-
-bptest(PoliticalOrientationModel5)
-
-#heteroscedacity is here! 
-
-#4 No dots outside of cooks line. good! 
-
-```
-
-```{r}
-#addressing Heteroskedasticity in the model
-
-coeftest(PoliticalOrientationModel5, vcov = vcovHC(PoliticalOrientationModel5, "HC1")) 
-
-#vs
-
-summary(PoliticalOrientationModel5) 
-
-#same results, less significance 
-
-```
-
 ### Norms and Political Orientation (Diaz 2020): Conservatives will report norms that favor immediate gratification.
 
 ```{r}
-PoliticalOrientationModel6 <- lm(Norms_index ~ Measure2_liberterian_Index + Measure2_liberal_Index + Measure2_cons_Index , data = omit_df_final)
+
+#cons base 
+
+PoliticalOrientationModel6 <- lm(Norms_index ~ Political_Orient_Cons_Base  , data = omit_df)
 
 summary(PoliticalOrientationModel6)
 
 plot(PoliticalOrientationModel6)
 
-outlierTest(PoliticalOrientationModel6)
-
-#1 Residuals Plot: relatively flat line -- linearity seems to be here! 
-
-#2 QQ Plot: Are the residuals normally distributed (follow a diagonal line)? For the most part, except for the beginning and end, but not too bad. 
-
-#3 Scale-Location:homoscedasticity test. Relativity flat line. 
+outlierTest(PoliticalOrientationModel6). 
 
 bptest(PoliticalOrientationModel6)
 
-#heteroscedacity is here! 
+#lib base
 
-#4 No dots outside of cooks line. good! 
+PoliticalOrientationModel7 <- lm(Norms_index ~ Political_Orient_Lib_Base, data = omit_df)
 
-```
+summary(PoliticalOrientationModel7)
 
-```{r}
-#addressing Heteroskedasticity in the model
+plot(PoliticalOrientationModel7)
 
-coeftest(PoliticalOrientationModel6, vcov = vcovHC(PoliticalOrientationModel6, "HC1")) 
+outlierTest(PoliticalOrientationModel7) 
 
-#vs
+bptest(PoliticalOrientationModel7)
 
-summary(PoliticalOrientationModel6) 
+#libert base 
 
-#same results
+PoliticalOrientationModel8 <- lm(Norms_index ~ Political_Orient_Lib_Base, data = omit_df)
+
+summary(PoliticalOrientationModel8)
+
+plot(PoliticalOrientationModel8)
+
+outlierTest(PoliticalOrientationModel8) 
+
+bptest(PoliticalOrientationModel8)
 
 ```
 
@@ -1202,6 +1194,28 @@ outlierTest(DisgustModel2)
 # no outliers 
 
 
+```
+
+### Is age predictive of COVID DoG? 
+```{r}
+
+AgeModel <- lm(logCOVID_DoG_index ~ Age , data = omit_df)
+
+summary(AgeModel)
+
+plot(AgeModel)
+
+outlierTest(AgeModel)
+
+omit_df_age_outliers <-omit_df[!(omit_df$id=="59" | omit_df$id=="212" | omit_df$id=="10" | omit_df$id=="15" | omit_df$id=="132" | omit_df$id=="262" | omit_df$id=="156" | omit_df$id=="157" | omit_df$id=="44" | omit_df$id=="253" | omit_df$id=="26" | omit_df$id=="109" | omit_df$id=="51" | omit_df$id=="238"),]
+
+AgeModel2 <- lm(logCOVID_DoG_index ~ Age, data = omit_df_age_outliers) 
+
+outlierTest(AgeModel2)
+
+summary(AgeModel2)
+
+plot(AgeModel2)
 ```
 
 # MISC SECTION 
