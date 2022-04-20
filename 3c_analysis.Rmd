@@ -251,6 +251,17 @@ outlierTest(GCSModel2)
 #There are no outliers. 
 ```
 
+
+```{r}
+
+# GCS, COVID DoG, SD 
+
+GCSModel3 <- lm(logCOVID_DoG_index ~ GCS_index + SDRS_Sum_scaled, data = omit_df)
+
+summary(GCSModel3)
+
+```
+
 ### COVID DoG and MCQ (K indice): People who report more discounting on the general DoG measure will delay less on the adopted COVID 19 specific DoG Task
 ```{r}
 
@@ -316,6 +327,15 @@ plot(logCOVID_DoG_index ~ logMeanK, data =  omit_df_MCQModel2_outliers)
 abline(MCQModel2)
 ```
 
+```{r}
+#MCQ, COVID DoG, and SD 
+
+MCQModel3 <- lm(logCOVID_DoG_index ~ logMeanK + SDRS_Sum_scaled, data =  omit_df)
+
+summary(MCQModel3)
+
+```
+
 ### COVID DoG and Poltiical Orientation (Diaz 2020): Individuals will vary systematically in COVID Specific DoG and norms by political orientation. Specifically,  Conservatives will delay less than Liberals on the COVID19 DoG task and report norms that favor immediate gratification. In addition, conservative ideology will be more predictive than the Harm/Purity foundation in predicting COVID19 DoG.
 
 ```{r}
@@ -367,7 +387,6 @@ bptest(PoliticalOrientationModel2)
 #sig result, so hetero present. 
 
 #4dots outside of cooks line? Nope! 
-
 
 #We got a serious case of heteroscedaciity folks. What does a model with robust standard errors look like? 
 
@@ -552,6 +571,35 @@ summary(PoliticalOrientationModel8)
 
 ```
 
+```{r}
+#Evertt, SD, and COVID DoG
+
+PoliticalOrientationModel7 <- lm(logCOVID_DoG_index ~ Measure5_Social_Index + Measure5_Political_Index + SDRS_Sum_scaled, data = omit_df)
+
+summary(PoliticalOrientationModel7)
+
+PoliticalOrientationModel8 <- lm(logCOVID_DoG_index ~ Measure5_Social_Index + Measure5_Political_Index + SDRS_Sum_scaled, data = omit_df_Everett_outliers)
+
+summary(PoliticalOrientationModel8)
+
+
+
+```
+
+
+```{r}
+#liberal base, COVID DoG, and SD
+
+PoliticalOrientationModel10  = lm(logCOVID_DoG_index ~ conservative_dummy + libertarian_dummy +none_dummy + SDRS_Sum_scaled, data = omit_df)
+
+summary(PoliticalOrientationModel10)
+
+PoliticalOrientationModel11  = lm(logCOVID_DoG_index ~ conservative_dummy + libertarian_dummy +none_dummy + SDRS_Sum_scaled, data = omit_df_libbase_outliers)
+
+summary(PoliticalOrientationModel11)
+
+```
+
 ### Moral Foundations and COVID DoG: Individuals will vary in the DoG on the COVID 19 specific task by moral foundations. Specifically, individuals high in harm/care and purity/sanctity will delay more in the context of COVID19 than those lower in high in harm/care and purity/sanctity. 
 
 ```{r}
@@ -611,6 +659,20 @@ bptest(MFTModel2)
 
 ```
 
+### MFT, DoG, and SD
+
+```{r}
+
+ MFTModel3 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation + SDRS_Sum_scaled, data = omit_df)
+               
+summary(MFTModel3)
+
+MFTModel4 <-lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation + SDRS_Sum_scaled, data = omit_df_MFTModel1_outliers)
+               
+summary(MFTModel4)
+
+```
+
 #### MFT, Political Orientation, and DoG: Conservative ideology will be more predictive than the Harm/Purity foundation in predicting COVID19 DoG.
 
 ```{r}
@@ -619,27 +681,44 @@ bptest(MFTModel2)
 
 #lib base
 
- MFTModel3 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation + Political_Orient_Lib_Base, data = omit_df)
+MFTModel5 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation + conservative_dummy + libertarian_dummy +none_dummy, data = omit_df)
                
-summary(MFTModel3)
+summary(MFTModel5)
 
-plot(MFTModel3)
+plot(MFTModel5)
 
-bptest(MFTModel3)
+bptest(MFTModel5)
 
-#Cons base
+outlierTest(MFTModel5)
 
-MFTModel4 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation +Political_Orient_Cons_Base , data = omit_df)
+omit_df_MFTModel5_outliers <-omit_df[!(omit_df$id=="10" | omit_df$id=="253" |omit_df$id=="44" | omit_df$id=="238" |omit_df$id=="59" |omit_df$id=="132" | omit_df$id=="156" |omit_df$id=="262" |omit_df$id=="212" | omit_df$id=="157" |omit_df$id=="109"  |omit_df$id=="15" |omit_df$id=="26"),]
+
+MFTModel6 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation + conservative_dummy + libertarian_dummy +none_dummy, data = omit_df_MFTModel5_outliers)
+
+outlierTest(MFTModel6)
                
-summary(MFTModel4)
+summary(MFTModel6)
 
-plot(MFTModel4)
+plot(MFTModel6)
 
-bptest(MFTModel4)
+bptest(MFTModel6)
 
-#libert base
+```
 
-MFTModel5 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation +Political_Orient_Cons_Base , data = omit_df)
+#### MFT, COVID DoG, Poltiical Oreintation, SD
+
+```{r}
+
+MFTModel7 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation + conservative_dummy + libertarian_dummy +none_dummy + SDRS_Sum_scaled, data = omit_df)
+               
+summary(MFTModel7)
+
+omit_df_MFTModel5_outliers <-omit_df[!(omit_df$id=="10" | omit_df$id=="253" |omit_df$id=="44" | omit_df$id=="238" |omit_df$id=="59" |omit_df$id=="132" | omit_df$id=="156" |omit_df$id=="262" |omit_df$id=="212" | omit_df$id=="157" |omit_df$id=="109"  |omit_df$id=="15" |omit_df$id=="26"),]
+
+MFTModel8 <- lm(logCOVID_DoG_index ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation + conservative_dummy + libertarian_dummy +none_dummy + SDRS_Sum_scaled, data = omit_df_MFTModel5_outliers)
+               
+summary(MFTModel8)
+
 
 ```
 
@@ -836,6 +915,20 @@ summary(NormsModel4)
 
 ```
 
+### Norms, COVID DoG, SD
+```{r}
+
+NormsModel5 <- lm(logCOVID_DoG_index ~ FamilyNorm_index + FriendsNorm_index + StrangerNorm_index+SDRS_Sum_scaled, data = omit_df)
+
+summary(NormsModel5)
+
+NormsModel6 <- lm(logCOVID_DoG_index ~Norms_index +SDRS_Sum_scaled, data = omit_df)
+
+summary(NormsModel6)
+
+```
+
+
 ### COVID DoG, Stress and Impact: Individuals with more impact and stress with COVID will delay more on the COVID specific DoG task. 
 
 ```{r}
@@ -881,6 +974,15 @@ bptest(COVIDImpactStress2)
 #not sig
 
 #4 No dots outside of cooks line. good! 
+
+
+```
+
+```{r}
+
+COVIDImpactStress3 <- lm(logCOVID_DoG_index ~ Impacts_index + Stress_index + SDRS_Sum_scaled, data = omit_df) 
+
+summary(COVIDImpactStress)
 
 
 ```
@@ -941,41 +1043,18 @@ plotCurves(stress_mod, plotx="Measure2_cons_Index", modx="Stress_index", interva
 
 ```{r}
 
-#cons base 
-
-PoliticalOrientationModel6 <- lm(Norms_index ~ Political_Orient_Cons_Base  , data = omit_df)
-
-summary(PoliticalOrientationModel6)
-
-plot(PoliticalOrientationModel6)
-
-outlierTest(PoliticalOrientationModel6). 
-
-bptest(PoliticalOrientationModel6)
-
 #lib base
 
-PoliticalOrientationModel7 <- lm(Norms_index ~ Political_Orient_Lib_Base, data = omit_df)
+PoliticalOrientationModel12 <- lm(Norms_index ~ conservative_dummy + libertarian_dummy +none_dummy, data = omit_df)
 
-summary(PoliticalOrientationModel7)
+summary(PoliticalOrientationModel12)
 
-plot(PoliticalOrientationModel7)
+plot(PoliticalOrientationModel12)
 
-outlierTest(PoliticalOrientationModel7) 
+outlierTest(PoliticalOrientationModel12)
 
-bptest(PoliticalOrientationModel7)
+bptest(PoliticalOrientationModel12)
 
-#libert base 
-
-PoliticalOrientationModel8 <- lm(Norms_index ~ Political_Orient_Lib_Base, data = omit_df)
-
-summary(PoliticalOrientationModel8)
-
-plot(PoliticalOrientationModel8)
-
-outlierTest(PoliticalOrientationModel8) 
-
-bptest(PoliticalOrientationModel8)
 
 ```
 
