@@ -1,0 +1,334 @@
+---
+title: "3C_HLR_Analysis"
+author: "3C Team"
+date: "7/28/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#load packages
+```{r}
+library(car)
+```
+
+
+# load final dataset
+```{r}
+omit_df <- read.csv("omit_df.csv", header=T, na.strings="")
+```
+
+#COVID DoG Model
+
+##Creating Models
+```{r}
+Model0 <- lm(logCOVID_DoG_index ~ 1, data = omit_df) #to obtain Total SS
+
+Model1 <- lm(logCOVID_DoG_index ~ logMeanK, data = omit_df)
+
+Model2 <- lm(logCOVID_DoG_index ~ logMeanK + GCS_index, data = omit_df)
+
+Model3 <- lm(logCOVID_DoG_index ~ logMeanK + GCS_index + Norms_index, data = omit_df)
+
+Model4 <-lm(logCOVID_DoG_index ~ logMeanK + GCS_index + Norms_index + Measure2_liberal_Index, data = omit_df)
+
+Model5 <- lm(logCOVID_DoG_index ~ logMeanK + GCS_index + Norms_index + Measure2_liberal_Index +Measure2_liberterian_Index, data = omit_df)
+
+Model6 <- lm(logCOVID_DoG_index ~ logMeanK + GCS_index + Norms_index + Measure2_liberal_Index + Measure2_liberterian_Index + Measure2_cons_Index, data = omit_df)
+
+Model7 <- lm(logCOVID_DoG_index ~ logMeanK + GCS_index + Norms_index + Measure2_liberal_Index + Measure2_liberterian_Index + Measure2_cons_Index + harm_foundation, data = omit_df)
+
+Model8  <- lm(logCOVID_DoG_index ~ logMeanK + GCS_index + Norms_index + Measure2_liberal_Index + Measure2_liberterian_Index + Measure2_cons_Index + harm_foundation + fairness_foundation, data = omit_df)
+
+Model9  <- lm(logCOVID_DoG_index ~ logMeanK + GCS_index + Norms_index + Measure2_liberal_Index + Measure2_liberterian_Index + Measure2_cons_Index + harm_foundation + fairness_foundation + authority_foundation, data = omit_df)
+
+Model10  <- lm(logCOVID_DoG_index ~ logMeanK + GCS_index + Norms_index + Measure2_liberal_Index + Measure2_liberterian_Index + Measure2_cons_Index + harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation, data = omit_df)
+
+Model11  <- lm(logCOVID_DoG_index ~ logMeanK + GCS_index + Norms_index + Measure2_liberal_Index + Measure2_liberterian_Index + Measure2_cons_Index + harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation + purity_foundation, data = omit_df)
+
+Model12 <- lm(logCOVID_DoG_index ~ logMeanK + GCS_index + Norms_index + Measure2_liberal_Index + Measure2_liberterian_Index + Measure2_cons_Index + harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation + Stress_index, data = omit_df)
+
+Model13 <- lm(logCOVID_DoG_index ~ logMeanK + GCS_index + Norms_index + Measure2_liberal_Index + Measure2_liberterian_Index + Measure2_cons_Index + harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation+ Stress_index + Impacts_index, data = omit_df)
+
+Model14 <- lm(logCOVID_DoG_index ~ logMeanK + GCS_index + Norms_index + Measure2_liberal_Index + Measure2_liberterian_Index + Measure2_cons_Index + harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation+ Stress_index + Impacts_index +SDRS_Sum_scaled, data = omit_df)
+
+```
+
+#Comparing SS
+```{r}
+#What is the SS wihtout predictors?
+
+anova(Model0)
+
+#Total SS is 758.7
+
+#What is the SS of all the rest of the models?
+
+anova(Model1, Model2, Model3, Model4, Model5, Model6, Model7, Model8, Model9, Model10, Model11, Model12, Model13, Model14)
+
+#Model1(adding MCQ):
+##SS:747.68
+
+summary(Model1)
+summary(Model12)
+
+#Model2 (adding uncertainty):
+##SS:747.64, F= 0.0353, P=0.851
+
+#Model3(Adding Norms):
+##SS:559.30, F=147.4122, P < 2.2e-16***
+
+#Model4(Adding Standard 3 PO measure:Liberal):
+##SS:539.34, F=15.6186, P < .000 ***
+
+#Model5(Adding Standard 3 PO measure:Liberterian):
+##SS:539.20, F=.1138, P < .7360
+
+#Model6(Adding Standard 3 PO measure:cons):
+##SS:524.80, F=11.2667, P < 008***
+
+#Model7(adding MFT: Harm):
+##SS:517.37, F= 5.8161, P=0.0163695
+
+#Model8(adding MFT:Fairness):
+##SS:508.83, F=6.6859 , P= 0.01010*
+
+#Model9(adding MFT:Authority):
+##SS:506.47, F= 1.8481, P= 0.17483
+
+#Model10(adding MFT:Ingroup):
+##SS:497.54, F= 6.9899,P= 0.0085479*
+
+#Model11(adding MFT:Purity):
+##SS:495.98, F=1.2158, P= 0.2709012
+
+#Model12(adding stress):
+#SS:473.86, F= 17.3164, P < .000*
+
+#Model13(adding impacts):
+#SS:473.70, F=0.1129, P=0.7261232
+
+#Model14(adding SD):SS:462.72.
+#SS:470.18, F=2.7589, 0.0975677 
+
+#This suggests to throw out Uncertainty, libert, harm, authority, purity, Impact and SD in the simultaneous model. Let's do that and see what happens. 
+
+```
+
+#MCQ Model
+
+##Creating Models
+```{r}
+MCQModel0 <- lm(logMeanK ~ 1, data = omit_df) #to obtain Total SS
+
+MCQModel1 <- lm(logMeanK ~ logCOVID_DoG_index, data = omit_df)
+
+MCQModel2 <- lm(logMeanK ~ logCOVID_DoG_index + GCS_index, data = omit_df)
+
+MCQModel3 <- lm(logMeanK ~ logCOVID_DoG_index+ GCS_index + Norms_index, data = omit_df)
+
+MCQModel4 <-lm(logMeanK ~ logCOVID_DoG_index + GCS_index + Norms_index + Measure2_liberal_Index, data = omit_df)
+
+MCQModel5 <- lm(logMeanK ~ logCOVID_DoG_index + GCS_index + Norms_index + Measure2_liberal_Index +Measure2_liberterian_Index, data = omit_df)
+
+MCQModel6 <- lm(logMeanK ~ logCOVID_DoG_index + GCS_index + Norms_index + Measure2_liberal_Index + Measure2_liberterian_Index + Measure2_cons_Index, data = omit_df)
+
+MCQModel7 <- lm(logMeanK ~ logCOVID_DoG_index + GCS_index + Norms_index + Measure2_liberal_Index + Measure2_liberterian_Index + Measure2_cons_Index + harm_foundation, data = omit_df)
+
+MCQModel8  <- lm(logMeanK ~ logCOVID_DoG_index + GCS_index + Norms_index + Measure2_liberal_Index + Measure2_liberterian_Index + Measure2_cons_Index + harm_foundation + fairness_foundation, data = omit_df)
+
+MCQModel9  <- lm(logMeanK ~ logCOVID_DoG_index + GCS_index + Norms_index + Measure2_liberal_Index + Measure2_liberterian_Index + Measure2_cons_Index + harm_foundation + fairness_foundation + authority_foundation, data = omit_df)
+
+MCQModel10  <- lm(logMeanK ~ logCOVID_DoG_index + GCS_index + Norms_index + Measure2_liberal_Index + Measure2_liberterian_Index + Measure2_cons_Index + harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation, data = omit_df)
+
+MCQModel11  <- lm(logMeanK ~ logCOVID_DoG_index + GCS_index + Norms_index + Measure2_liberal_Index + Measure2_liberterian_Index + Measure2_cons_Index + harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation + purity_foundation, data = omit_df)
+
+MCQModel12 <- lm(logMeanK ~ logCOVID_DoG_index + GCS_index + Norms_index + Measure2_liberal_Index + Measure2_liberterian_Index + Measure2_cons_Index + harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation + Stress_index, data = omit_df)
+
+MCQModel13 <- lm(logMeanK ~ logCOVID_DoG_index + GCS_index + Norms_index + Measure2_liberal_Index + Measure2_liberterian_Index + Measure2_cons_Index + harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation+ Stress_index + Impacts_index, data = omit_df)
+
+MCQModel14 <- lm(logMeanK ~ logCOVID_DoG_index + GCS_index + Norms_index + Measure2_liberal_Index + Measure2_liberterian_Index + Measure2_cons_Index + harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation+ Stress_index + Impacts_index +SDRS_Sum_scaled, data = omit_df)
+
+```
+
+#Comparing SS
+```{r}
+#What is the SS wihtout predictors?
+
+anova(MCQModel0)
+
+#Total SS is 1312.4
+
+#What is the SS of all the rest of the models?
+
+summary(MCQModel1)
+
+summary(MCQModel12)
+
+anova(MCQModel1, MCQModel2, MCQModel3, MCQModel4, MCQModel5, MCQModel6, MCQModel7, MCQModel8, MCQModel9, MCQModel10, MCQModel11, MCQModel12, MCQModel13, MCQModel14)
+
+```
+
+#Other HLRs, COVID DoG 
+
+```{r}
+
+Model0 <- lm(logCOVID_DoG_index ~ 1, data = omit_df) #to obtain Total SS
+
+Model1 <- lm(logCOVID_DoG_index ~ SDRS_Sum_scaled, data = omit_df)
+
+Model2 <- lm(logCOVID_DoG_index ~ SDRS_Sum_scaled + Stress_index + Impacts_index, data = omit_df)
+
+Model3 <- lm(logCOVID_DoG_index ~ SDRS_Sum_scaled + Stress_index + Impacts_index +  GCS_index, data = omit_df)
+
+Model4 <-lm(logCOVID_DoG_index ~ SDRS_Sum_scaled + Stress_index + Impacts_index +  GCS_index + Norms_index, data = omit_df)
+
+Model5 <- lm(logCOVID_DoG_index ~  SDRS_Sum_scaled + Stress_index + Impacts_index +  GCS_index + Norms_index + harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation + purity_foundation, data = omit_df)
+
+Model6 <- lm(logCOVID_DoG_index ~ SDRS_Sum_scaled + Stress_index + Impacts_index +  GCS_index + Norms_index + harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation + purity_foundation + Measure2_liberal_Index + Measure2_liberterian_Index + Measure2_cons_Index, data = omit_df)
+
+Model7 <- lm(logCOVID_DoG_index ~ SDRS_Sum_scaled + Stress_index + Impacts_index +  GCS_index + Norms_index + harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation + purity_foundation + Measure2_liberal_Index + Measure2_liberterian_Index + Measure2_cons_Index + logMeanK, data = omit_df)
+```
+
+
+#Comparing SS
+```{r}
+anova(Model0)
+
+#Total SS is 758.7
+
+#What is the SS of all the rest of the models?
+
+anova(Model1, Model2, Model3, Model4, Model5, Model6, Model7)
+
+#This suggests to throw out social desirability, uncertainty, and political oreination. 
+
+#what do the indiviudal models look like?
+
+summary(Model1)
+summary(Model2)
+summary(Model3)
+summary(Model4)
+summary(Model5)
+summary(Model6)
+summary(Model7)
+
+#what is the difference in r2?
+
+#Model 2,  0.07323 - Model 1, 0.003554 = 0.069676
+
+0.07323- 0.003554 
+
+#Model 3,  0.0734  - Model 2,  0.07323 = 0.2482
+
+ 0.0734- 0.07323
+
+#Model 4, 0.2851 - Model 3, 0.0734 = 0.2117
+
+0.2851 - 0.0734
+
+#Model 5,0.3638- Model 4, -  0.2851 = 0.0375
+0.3638 -  0.2851
+
+#Model 6, 0.3717 - Model 5, 0.3638 =  0.0079
+
+0.3717- 0.3638
+
+#Model 7, 0.3806 - Model 6, 0.3717 = 0.0089
+
+ 0.3806 - 0.3717
+```
+
+#Other HLRs, MCQ
+
+```{r}
+
+MCQModel0 <- lm(logMeanK ~ 1, data = omit_df) #to obtain Total SS
+
+MCQModel1 <- lm(logMeanK ~ SDRS_Sum_scaled, data = omit_df)
+
+MCQModel2 <- lm(logMeanK ~ SDRS_Sum_scaled+ GCS_index, data = omit_df)
+
+```
+
+#Comparing SS
+```{r}
+anova(MCQModel0)
+
+#Total SS is 758.7
+
+#What is the SS of all the rest of the models?
+
+anova(MCQModel1, MCQModel2)
+
+#This suggests to throw out x,y ,z. 
+
+#what do the individual models look like?
+
+summary(MCQModel1)
+summary(MCQModel2)
+
+
+#what is the difference in r2?
+
+#Model 2,  0.018427 - Model 1,  0.006085	 = 0.012335
+
+0.01842 -  0.006085
+
+
+```
+
+#Revised Megamodels
+```{r}
+
+MegaModel1 <- lm(logCOVID_DoG_index ~ Stress_index + Norms_index + fairness_foundation + ingroup_foundation + Measure2_cons_Index + logMeanK, data = omit_df)
+
+summary(MegaModel1)
+
+plot(MegaModel1)
+
+vif(MegaModel1)
+
+outlierTest(MegaModel1)
+
+MM1_outliers <-omit_df[!(omit_df$id=="10" | omit_df$id=="253" | omit_df$id=="238"),] 
+
+MegaModel2 <- lm(logCOVID_DoG_index ~ Stress_index + Norms_index+ fairness_foundation + ingroup_foundation + Measure2_cons_Index + logMeanK, data = MM1_outliers)
+
+summary(MegaModel2)
+
+plot(MegaModel2)
+
+outlierTest(MegaModel2)
+
+MegaModel3 <- lm(logMeanK ~ GCS_index, data = omit_df)
+
+summary(MegaModel3)
+
+outlierTest(MegaModel3)
+
+
+```
+
+#let's look deeper into the models
+```{r}
+
+MegaModel3 <-lm(logCOVID_DoG_index ~ logMeanK + Norms_index + Measure2_liberal_Index + Measure2_cons_Index, data = omit_df)
+
+summary(MegaModel3)
+
+MegaModel4 <- lm(logCOVID_DoG_index ~ logMeanK + Norms_index + Measure2_liberal_Index + Measure2_cons_Index + Measure5_Political_Index, data = omit_df)
+
+summary(MegaModel4)
+
+MegaModel5 <- lm(logCOVID_DoG_index ~ logMeanK + Measure2_liberal_Index + Measure2_cons_Index + fairness_foundation + ingroup_foundation + Norms_index + Stress_index, data = omit_df)
+
+summary(MegaModel5)
+
+vif(MegaModel5)
+
+
+```
+
