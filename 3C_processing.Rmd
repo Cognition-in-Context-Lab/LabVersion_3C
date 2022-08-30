@@ -48,18 +48,18 @@ NAcols <- c("Gender_4_TEXT", "Race_6_TEXT")
 
 #exclude remaining folks progress less than 100 percent 
 
-df[which(df$'Progress' <= 100), ]
+df[which(df$Progress < 100), ]
 
 # Remove all the folks who meet the criteria stated above 
 
 #df <- df[-c(1,2,8:12,14,22,23,118,176,191,205,222,255,243,252,270,323,324,331,350,364,392,394,415:444,423,424,426,426,429,432:434,436,439,443,444), ]
 
-df <- df[-c(1,2,8:12,14,22,205,222,255,324,394,410,415:421,423,424,426,429,432:434,436,439,443,444), ]
+df <- df[-c(1,2,8:12,14,22,205,222,255,324,394,415:421,422,423,424,425,426,429,432:434,436,439,443,444), ]
 
 df <- df[ , !names(df) %in% unneeded_cols]
 df <- df[ , !names(df) %in% NAcols]
 
-#411 participants are now left out of the original 442
+#410 participants are now left out of the original 442
 
 
 ```
@@ -529,8 +529,22 @@ omit_df <- omit_df %>% mutate(StrangerNorm_index = rowMeans(mini_df),
 ```{r}
 
 #re-coding reverse coded variables
-mini_df <- omit_df %>% select(GCS_5)
-omit_df <- omit_df %>% mutate(GCS_5 = 7 - GCS_5)
+mini_df <- omit_df %>% select(GCS_1)
+omit_df <- omit_df %>% mutate(GCS_1 = 7 - GCS_1)
+
+mini_df <- omit_df %>% select(GCS_2)
+omit_df <- omit_df %>% mutate(GCS_2 = 7 - GCS_2)
+
+mini_df <- omit_df %>% select(GCS_3)
+omit_df <- omit_df %>% mutate(GCS_3 = 7 - GCS_3)
+
+mini_df <- omit_df %>% select(GCS_4)
+omit_df <- omit_df %>% mutate(GCS_4 = 7 - GCS_4)
+
+mini_df <- omit_df %>% select(GCS_6)
+omit_df <- omit_df %>% mutate(GCS_6 = 7 - GCS_6)
+
+
 
 mini_df <- omit_df %>% select(contains("GCS"))
 omit_df <- omit_df %>% mutate(GCS_index = rowMeans(mini_df),
