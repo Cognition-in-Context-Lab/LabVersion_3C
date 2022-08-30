@@ -15,6 +15,8 @@ library(tidyverse)
 library(ggplot2)
 library(ggrepel)
 library(scales)
+library(vtable)
+#install.packages("vtable")
 #install.packages("Hmisc")
 #install.packages("lmtest")
 #install.packages("jtools")
@@ -23,6 +25,8 @@ library(scales)
 #install.packages("car")
 #install.packages("sandwich")
 #install.packages("ggrepel")
+#install.packages("Metrics")
+#install.packages("pls")
 library(sandwich)
 library(car)
 library(jtools)
@@ -31,6 +35,9 @@ library(lm.beta)
 library(lmtest)
 library(Hmisc)
 library(dplyr)
+library(Metrics)
+library(pls)
+library(GGally)
 #library(plyr)
 ```
 # Analyses 
@@ -48,20 +55,48 @@ omit_df <- read.csv("omit_df.csv", header=T, na.strings="")
 
 mean(omit_df$logMeanK)
 
+
 histogram(omit_df$logMeanK)
 
-#Mean discounting on MCQ = -4.906, fairly normal distrubution 
+#Mean discounting on MCQ = -4.904, fairly normal distrubution 
+
+mean(omit_df$GCS_index)
+
+#mean = 3.5600
+
 
 ```
+
+## Summary statistics table
+
+```{r}
+data(omit_df)
+st(omit_df, vars = c('logMeanK', 'logCOVID_DoG_index','GCS_index', 'Norms_index', 'Measure2_liberal_Index', 'Measure2_liberterian_Index', 'Measure2_cons_Index', 'harm_foundation', 'fairness_foundation', 'authority_foundation', 'ingroup_foundation', 'purity_foundation', 'Stress_index', 'Impacts_index', 'SDRS_Sum_scaled'))
+
+labs <- data.frame(name1= c('logMeanK', 'logCOVID_DoG_index', 'GCS_index', 'Norms_index', 'Measure2_liberal_Index', 'Measure2_liberterian_Index', 'Measure2_cons_Index', 'harm_foundation', 'fairness_foundation', 'authority_foundation', 'ingroup_foundation', 'purity_foundation', 'Stress_index', 'Impacts_index', 'SDRS_Sum_scaled'), name2 = c('Temporal discounting','COVID-19 delay of gratification', 'Uncertainty', 'COVID-19 social norms', 'Liberal political oreintation', 'Liberterian political oreintaiton', 'Conservative political oreintation', 'Harm Foundation', 'Fariness Foundation', 'Authority Foundation','Ingroup Foundation', 'Purity Foundation', 'COVID-19 Stress', 'COVID-19 Impact', 'Socail Deserability'))
+
+sumtable(omit_df,
+         summ =c('mean(x)',
+               'sd(x)',
+               'min(x)',
+               'max(x)'), 
+         vars = c('logMeanK', 'logCOVID_DoG_index', 'Norms_index','GCS_index','harm_foundation', 'fairness_foundation', 'authority_foundation', 'ingroup_foundation', 'purity_foundation', 'SDRS_Sum_scaled','Impacts_index', 'Stress_index', 'Measure2_liberal_Index', 'Measure2_liberterian_Index', 'Measure2_cons_Index'),labels =labs)
+
+vartable <-vtable(omit_df, out = 'return')
+vartable
+
+
+```
+
 
 ## Demographics  
 
 ```{r}
 ## number of included participants
 #study requested 400 participants: 
-#original df dataset had 444 rows, removed 61 rows in processing script (unneeded rows, incomplete trials, low cons scores for MCQ and too short or too long entries) = 383 rows 
+#original df dataset had 444 rows, removed 61 rows in processing script (unneeded rows, incomplete trials, low cons scores for MCQ and too short or too long entries) = 384 rows 
 
-nrow(omit_df) # 383 rows
+nrow(omit_df) # 384 rows
 
 #duration, demographics
 
@@ -74,7 +109,9 @@ sd(omit_df$Age)
 max(omit_df$Age)
 table(omit_df$Gender)
 table(omit_df$Race)
+table(omit_df$Ethnicity)
 table(omit_df$Education)
+table(omit_df$MaritalStatus)
 ```
 
 ## Demographics Cont.  
@@ -173,13 +210,12 @@ omit_df$none_dummy<-ifelse(omit_df$conservative_dummy==0 & omit_df$liberal_dummy
 ### MCQ and Uncertainty:People who report less confidence about the future should delay less on the adopted COVID 19 specific DoG Task and report more temporal discounting. 
 
 ```{r}
-
 #Visualizing the data
 
-ggscatter(omit_df, x = "GCS_index", y = "logMeanK", 
+ggscatter(omit_df, x = "logMeanK", y = "logCOVID_DoG_index", 
           add = "reg.line", conf.int = TRUE, 
           cor.coef = TRUE, cor.method = "pearson",
-          xlab = "GCS_index", ylab = "logMeanK")
+          xlab = "mcq", ylab = "COVID DoG")
 
 #Running the linear model
 
@@ -213,6 +249,16 @@ plot(logMeanK ~ GCS_index, data =  omit_df)
 abline(GCSModel1)
 ```
 
+```{r}
+
+# GCS, MCQ, SD 
+
+GCSModel4 <- lm(logMeanK ~ GCS_index + SDRS_Sum_scaled, data = omit_df)
+
+summary(GCSModel4)
+
+```
+
 ### COVID DoG and Uncertainity: People who report less confidence about the future should delay less on the adopted COVID 19 specific DoG Task.  
 
 ```{r}
@@ -222,7 +268,7 @@ abline(GCSModel1)
 ggscatter(omit_df, x = "logCOVID_DoG_index", y = "GCS_index", 
           add = "reg.line", conf.int = TRUE, 
           cor.coef = TRUE, cor.method = "pearson",
-          xlab = "COVID DoG ", ylab = "General Uncertainity ")
+          xlab = "COVID DoG ", ylab = "Uncertainity about the Future (revesre-scored geeneral confidence scale) ")
 
 GCSModel2 <- lm(logCOVID_DoG_index ~ GCS_index, data = omit_df)
 
@@ -251,6 +297,25 @@ outlierTest(GCSModel2)
 #There are no outliers. 
 ```
 
+```{r}
+#correlation comparison 
+
+#in a previous section of the code, just pasted it here
+#MCQ and Uncertainty
+
+ggscatter(omit_df, x = "GCS_index", y = "logMeanK", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "GCS_index", ylab = "logMeanK")
+#DoG and Uncertainty
+ggscatter(omit_df, x = "GCS_index", y = "logCOVID_DoG_index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "GCS_index ", ylab = "logCOVID_DoG_index")
+
+#Fischer-Z Comparison
+paired.r(0.11, -0.022, NULL, 384)
+```
 
 ```{r}
 
@@ -337,6 +402,87 @@ summary(MCQModel3)
 ```
 
 ### COVID DoG and Poltiical Orientation (Diaz 2020): Individuals will vary systematically in COVID Specific DoG and norms by political orientation. Specifically,  Conservatives will delay less than Liberals on the COVID19 DoG task and report norms that favor immediate gratification. In addition, conservative ideology will be more predictive than the Harm/Purity foundation in predicting COVID19 DoG.
+```{r}
+# First, to inform how we approach the models, how strongly do our political orientation varaibles correlate together?
+
+ggscatter(omit_df, x = "Measure2_liberal_Index", y = "Measure5_Social_Index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Measure2_liberal_Index", ylab = "Measure5_Social_Index")
+
+ggscatter(omit_df, x = "Measure2_liberal_Index", y = "Measure5_Political_Index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Measure2_liberal_Index ", ylab = "Measure5_Political_Index")
+
+ggscatter(omit_df, x = "Measure2_liberterian_Index", y = "Measure5_Social_Index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Measure2_liberterian_Index", ylab = "Measure5_Social_Index")
+
+ggscatter(omit_df, x = "Measure2_liberterian_Index", y = "Measure5_Political_Index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Measure2_liberterian_Index", ylab = "Uncertainity about the Future (revesre-scored geeneral confidence scale) ")
+
+ggscatter(omit_df, x = "Measure2_cons_Index", y = "Measure5_Social_Index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Measure2_cons_Index", ylab = "Measure5_Social_Index")
+
+ggscatter(omit_df, x = "Measure2_cons_Index", y = "Measure5_Political_Index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Measure2_cons_Index ", ylab = "Measure5_Economic_Index")
+
+
+```
+
+```{r}
+#no bases
+
+PoliticalPoliticalOrientationModel0 <- lm(logCOVID_DoG_index ~ Measure2_liberal_Index + Measure2_liberterian_Index + Measure2_cons_Index, data = omit_df)
+
+summary(PoliticalPoliticalOrientationModel0)
+
+outlierTest(PoliticalPoliticalOrientationModel0)
+
+omit_df_PO_nobases <-omit_df[!(omit_df$id=="10" | omit_df$id=="26"||omit_df$id=="15"|omit_df$id=="44"|omit_df$id=="109"|omit_df$id=="59"|omit_df$id=="253" | omit_df$id=="132" | omit_df$id=="156"  | omit_df$id=="212" | omit_df$id=="157"| omit_df$id=="262"| omit_df$id=="238"),]
+
+PoliticalPoliticalOrientationModel0.5 <- lm(logCOVID_DoG_index ~ Measure2_liberal_Index + Measure2_liberterian_Index + Measure2_cons_Index, data = omit_df_PO_nobases)
+
+outlierTest(PoliticalPoliticalOrientationModel0.5)
+
+summary(PoliticalPoliticalOrientationModel0.5)
+
+PoliticalPoliticalOrientationModel1.5 <- lm(logMeanK ~ Measure2_liberal_Index + Measure2_liberterian_Index + Measure2_cons_Index, data = omit_df)
+
+summary(PoliticalPoliticalOrientationModel1.5)
+
+outlierTest(PoliticalPoliticalOrientationModel1.5)
+
+#how does the model look when we throw all this shit in one model? 
+
+PoliticalPoliticalOrientationModel2.5 <- lm(logCOVID_DoG_index ~ Measure2_cons_Index + Measure5_Political_Index + Measure5_Social_Index, data = omit_df)
+
+summary(PoliticalPoliticalOrientationModel2.5)
+
+outlierTest(PoliticalPoliticalOrientationModel2.5)
+
+omit_df_PO_nobases3.5 <-omit_df[!(omit_df$id=="132"|omit_df$id=="157" | omit_df$id=="26"||omit_df$id=="15"| omit_df$id=="44"|omit_df$id=="262" | omit_df$id=="238"| omit_df$id=="59"| omit_df$id=="253"| omit_df$id=="10"| omit_df$id=="212" |omit_df$id=="109" | omit_df$id=="156"),]
+
+
+PoliticalPoliticalOrientationModel3.5 <- lm(logCOVID_DoG_index ~  Measure2_cons_Index + Measure5_Political_Index + Measure5_Social_Index, data = omit_df_PO_nobases3.5)
+
+summary(PoliticalPoliticalOrientationModel3.5)
+
+outlierTest(PoliticalPoliticalOrientationModel3.5)
+
+plot(PoliticalPoliticalOrientationModel3.5)
+
+vif(PoliticalPoliticalOrientationModel3.5)
+
+```
 
 ```{r}
 
@@ -600,6 +746,93 @@ summary(PoliticalOrientationModel11)
 
 ```
 
+```{r}
+
+#correlation comparison, liberal
+
+ggscatter(omit_df, x = "Measure2_liberal_Index", y = "logMeanK", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Measure2_liberal_Index", ylab = "logMeanK")
+
+ggscatter(omit_df, x = "Measure2_liberal_Index", y = "logCOVID_DoG_index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Measure2_liberal_Index", ylab = "logCOVID_DoG_index")
+
+#Fischer-Z Comparison
+paired.r(0.32, -.027, NULL, 383)
+```
+
+```{r}
+#correlation comparison, libertarian
+
+ggscatter(omit_df, x = "Measure2_liberterian_Index", y = "logMeanK", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Measure2_liberterian_Index", ylab = "logMeanK")
+
+ggscatter(omit_df, x = "Measure2_liberterian_Index", y = "logCOVID_DoG_index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Measure2_liberterian_Index", ylab = "logCOVID_DoG_index")
+
+#Fischer-Z Comparison
+paired.r(-0.093, .12, NULL, 384)
+```
+
+```{r}
+#correlation comparison, conservative 
+
+ggscatter(omit_df, x = "Measure2_cons_Index", y = "logMeanK", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Measure2_cons_Index", ylab = "logMeanK")
+
+ggscatter(omit_df, x = "Measure2_cons_Index", y = "logCOVID_DoG_index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Measure2_cons_Index ", ylab = "logCOVID_DoG_index")
+
+#Fischer-Z Comparison
+paired.r(0.036, -.37, NULL, 384)
+```
+
+```{r}
+#correlation comparison, SECS poltiical conservatism 
+
+ggscatter(omit_df, x = "Measure5_Political_Index", y = "logMeanK", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Measure5_Political_Index", ylab = "logMeanK")
+
+ggscatter(omit_df, x = "Measure5_Political_Index", y = "logCOVID_DoG_index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Measure5_Political_Index", ylab = "logCOVID_DoG_index")
+
+#Fischer-Z Comparison
+paired.r(0.04, -.41, NULL, 383)
+```
+
+```{r}
+
+#correlation comparison, SECS social conservatism 
+
+ggscatter(omit_df, x = "Measure5_Social_Index", y = "logMeanK", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Measure5_Social_Index", ylab = "logMeanK")
+
+ggscatter(omit_df, x = "Measure5_Social_Index", y = "logCOVID_DoG_index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Measure5_Social_Index ", ylab = "logCOVID_DoG_index")
+
+#Fischer-Z Comparison
+paired.r(0.09, -.32, NULL, 383)
+```
+
 ### Moral Foundations and COVID DoG: Individuals will vary in the DoG on the COVID 19 specific task by moral foundations. Specifically, individuals high in harm/care and purity/sanctity will delay more in the context of COVID19 than those lower in high in harm/care and purity/sanctity. 
 
 ```{r}
@@ -753,6 +986,103 @@ outlierTest(MFTModel6)
 #no outliers 
 ```
 
+```{r}
+MFTModel7 <- lm(logMeanK ~ harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation +purity_foundation + SDRS_Sum_scaled, data = omit_df)
+               
+summary(MFTModel7)
+
+plot(MFTModel7)
+
+```
+
+```{r}
+
+#correlation comparison, MFT harm
+
+ggscatter(omit_df, x = "harm_foundation", y = "logMeanK", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "harm_foundation", ylab = "logMeanK")
+
+ggscatter(omit_df, x = "harm_foundation", y = "logCOVID_DoG_index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "harm_foundation ", ylab = "COVID_DoG")
+          
+#Fischer-Z Comparison
+
+paired.r(0.049, .29, NULL, 383)
+```
+
+```{r}
+
+#correlation comparison, MFT fairness
+
+ggscatter(omit_df, x = "fairness_foundation", y = "logMeanK", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "fairness_foundation", ylab = "logMeanK")
+
+ggscatter(omit_df, x = "fairness_foundation", y = "logCOVID_DoG_index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "fairness_foundation", ylab = "logCOVID_DoG_index")
+
+#Fischer-Z Comparison
+paired.r(0.000, .37, NULL, 384)
+```
+
+```{r}
+
+#correlation comparison, MFT authority
+
+ggscatter(omit_df, x = "authority_foundation", y = "logMeanK", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "authority_foundation", ylab = "logMeanK")
+
+ggscatter(omit_df, x = "authority_foundation", y = "logCOVID_DoG_index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "authority_foundation", ylab = "logCOVID_DoG_index")
+
+#Fischer-Z Comparison
+paired.r(0.095, -.19, NULL, 383)
+```
+
+```{r}
+#correlation comparison, MFT ingroup
+
+ggscatter(omit_df, x = "ingroup_foundation", y = "logMeanK", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "ingroup_foundation", ylab = "logMeanK")
+
+ggscatter(omit_df, x = "ingroup_foundation", y = "logCOVID_DoG_index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "ingroup_foundation", ylab = "logCOVID_DoG_index")
+
+#Fischer-Z Comparison
+paired.r(0.097, -0.19, NULL, 383)
+```
+
+```{r}
+#correlation comparison, MFT purity
+
+ggscatter(omit_df, x = "purity_foundation", y = "logMeanK", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "purity_foundation", ylab = "logMeanK")
+
+ggscatter(omit_df, x = "purity_foundation", y = "logCOVID_DoG_index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "purity_foundation", ylab = "logCOVID_DoG_index")
+
+#Fischer-Z Comparison
+paired.r(0.12, -0.15, NULL, 383)
+```
 
 ### COVID DoG and Social Deserability Measure: No specific Hypothesis 
 
@@ -803,6 +1133,23 @@ bptest(SocialDesirabilityModel2)
 #4 No dots outside of cooks line. good! 
 
 
+```
+
+```{r}
+#correlation comparison, SD
+
+ggscatter(omit_df, x = "SDRS_Sum_scaled", y = "logMeanK", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "SDRS_Sum_scaled", ylab = "logMeanK")
+
+ggscatter(omit_df, x = "SDRS_Sum_scaled", y = "logCOVID_DoG_index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "SDRS_Sum_scaled", ylab = "logCOVID_DoG_index")
+
+#Fischer-Z Comparison
+paired.r(-0.078, 0.06, NULL, 383)
 ```
 
 ### Norms + COVID DoG: People who report that social norms (based on participants perceptions of family, friends, and strangers opinions) favor immediate gratification should show less delaying on the adopted COVID 19 specific DoG Task
@@ -915,6 +1262,24 @@ summary(NormsModel4)
 
 ```
 
+```{r}
+#correlation comparison, norms index 
+
+ggscatter(omit_df, x = "Norms_index", y = "logMeanK", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Norms_index", ylab = "logMeanK")
+
+ggscatter(omit_df, x = "Norms_index", y = "logCOVID_DoG_index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Norms_index", ylab = "logCOVID_DoG_index")
+
+#Fischer-Z Comparison
+paired.r(0.078, -0.5, NULL, 384)
+
+```
+
 ### Norms, COVID DoG, SD
 ```{r}
 
@@ -987,6 +1352,43 @@ summary(COVIDImpactStress)
 
 ```
 
+```{r}
+#correlation comparison, impacts
+
+ggscatter(omit_df, x = "Impacts_index", y = "logMeanK", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Impacts_index", ylab = "logMeanK")
+
+
+ggscatter(omit_df, x = "Impacts_index", y = "logCOVID_DoG_index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Impacts_index", ylab = "logCOVID_DoG_index")
+
+#Fischer-Z Comparison
+paired.r(0.11, 0.043, NULL, 383)
+
+```
+
+```{r}
+#correlation comparison, stress
+
+ggscatter(omit_df, x = "Stress_index", y = "logMeanK", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Stress_index", ylab = "logMeanK")
+
+ggscatter(omit_df, x = "Stress_index", y = "logCOVID_DoG_index", 
+          add = "reg.line", conf.int = TRUE, 
+          cor.coef = TRUE, cor.method = "pearson",
+          xlab = "Stress_index", ylab = "logCOVID_DoG_index")
+
+#Fischer-Z Comparison
+paired.r(0.15, 0.25, NULL, 384)
+
+```
+
 ### Political Orientation and DoG, moderated by Impact and Experiences: COVID impact, stress, experience will moderate the relationship between Political Orientation and COVID Specific DoG. Conservatives on the whole will delay less than liberals on the COVID19 specific DoG Task. However, conservatives who have more impact, stress, and experience will delay more than who conservatives who have less impact, stress, and experience.
 
 ```{r}
@@ -1038,6 +1440,142 @@ plotCurves(stress_mod, plotx="Measure2_cons_Index", modx="Stress_index", interva
 ```
 
 ## Misc Models 
+
+### Mega Model(all of the COVID predictors in one model)
+
+```{r}
+
+#without 3 option political orientation
+
+MegaModel1 <- lm(logCOVID_DoG_index ~ logMeanK + Measure5_Social_Index + Measure5_Political_Index + GCS_index + harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation + purity_foundation + Norms_index + Stress_index + Impacts_index + SDRS_Sum_scaled, data = omit_df)
+
+summary(MegaModel1)
+
+plot(MegaModel1)
+
+outlierTest(MegaModel1)
+
+
+MM1_outliers <-omit_df[!(omit_df$id=="10" | omit_df$id=="253" | omit_df$id=="238" | omit_df$id=="109"),]
+
+MegaModel2 <- lm(logCOVID_DoG_index ~ logMeanK +  Measure5_Social_Index + Measure5_Political_Index + GCS_index + harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation + purity_foundation + Norms_index + Stress_index + Impacts_index + SDRS_Sum_scaled, data = MM1_outliers)
+
+outlierTest(MegaModel2)
+
+summary(MegaModel2)
+
+plot(MegaModel2)
+
+bptest(MegaModel2)
+
+coeftest(MegaModel2, vcov = vcovHC(MegaModel2, "HC1")) 
+
+
+#with 3 political orientation, non dummy coded variables 
+  
+MegaModel3 <- lm(logCOVID_DoG_index ~ logMeanK + GCS_index +  Measure2_liberterian_Index + Measure2_liberal_Index + Measure2_cons_Index + harm_foundation +  fairness_foundation + authority_foundation + ingroup_foundation + purity_foundation + Norms_index + Stress_index + Impacts_index + SDRS_Sum_scaled, data = omit_df)
+ 
+summary(MegaModel3)
+
+outlierTest(MegaModel3)
+
+MM1_outliers <-omit_df[!(omit_df$id=="10" | omit_df$id=="253" | omit_df$id=="238"),]
+
+MegaModel4 <- lm(logCOVID_DoG_index ~ logMeanK + GCS_index + Measure2_liberterian_Index + Measure2_liberal_Index + Measure2_cons_Index + harm_foundation +  fairness_foundation + authority_foundation + ingroup_foundation + purity_foundation + Norms_index + Stress_index + Impacts_index + SDRS_Sum_scaled, data = MM1_outliers)
+
+outlierTest(MegaModel4)
+
+summary(MegaModel4)
+
+vif(MegaModel4)
+
+plot(MegaModel4)
+
+#with 3 political orientation, dummy coded variables 
+
+MegaModel5 <- lm(logCOVID_DoG_index ~ logMeanK + GCS_index + libertarian_dummy + conservative_dummy + none_dummy + harm_foundation +  fairness_foundation + authority_foundation + ingroup_foundation + purity_foundation + Norms_index + Stress_index + Impacts_index + SDRS_Sum_scaled, data = omit_df)
+
+summary(MegaModel5)
+
+outlierTest(MegaModel5)
+
+MM1_outliers <-omit_df[!(omit_df$id=="10" | omit_df$id=="253" | omit_df$id=="238"),]
+
+MegaModel6 <- lm(logCOVID_DoG_index ~ logMeanK + GCS_index + libertarian_dummy + conservative_dummy + none_dummy + harm_foundation +  fairness_foundation + authority_foundation + ingroup_foundation + purity_foundation + Norms_index + Stress_index + Impacts_index + SDRS_Sum_scaled, data = MM1_outliers)
+
+
+summary(MegaModel6)
+
+plot(MegaModel6)
+
+MegaModel7 <- lm(logCOVID_DoG_index ~ logMeanK + GCS_index + Measure2_cons_Index  Measure2_liberterian_Index + Measure2_liberal_Index+ Measure5_Political_Index + Measure5_Social_Index +  harm_foundation +  fairness_foundation + authority_foundation + ingroup_foundation + purity_foundation + Norms_index + Stress_index + Impacts_index + SDRS_Sum_scaled, data = omit_df)
+
+summary(MegaModel7)
+
+outlierTest(MegaModel7)
+
+vif(MegaModel7)
+
+MM1_outliers <-omit_df[!(omit_df$id=="10" | omit_df$id=="253" | omit_df$id=="238"| omit_df$id=="109"),]
+
+MegaModel8 <- lm(logCOVID_DoG_index ~ logMeanK + GCS_index  + Measure2_cons_Index +  Measure2_liberterian_Index + Measure2_liberal_Index + Measure5_Political_Index + Measure5_Social_Index + harm_foundation +  fairness_foundation + authority_foundation + ingroup_foundation + purity_foundation + Norms_index + Stress_index + Impacts_index + SDRS_Sum_scaled, data = MM1_outliers)
+
+summary(MegaModel8)
+
+outlierTest(MegaModel8)
+
+vif(MegaModel8)
+
+plot(MegaModel8)
+
+
+
+```
+
+
+### Mega Model(all of the MCQ predictors in one model)
+```{r}
+
+#without 3 option political orientation
+
+MegaModel9 <- lm(logMeanK ~ logCOVID_DoG_index + Measure5_Social_Index + Measure5_Political_Index + GCS_index + harm_foundation + fairness_foundation + authority_foundation + ingroup_foundation + purity_foundation + Norms_index + Stress_index + Impacts_index + SDRS_Sum_scaled, data = omit_df)
+
+summary(MegaModel9)
+
+plot(MegaModel9)
+
+outlierTest(MegaModel9)
+
+#with 3 political orientation, non dummy coded variables 
+  
+MegaModel10 <- lm(logMeanK ~ logCOVID_DoG_index + GCS_index +  Measure2_liberterian_Index + Measure2_liberal_Index + Measure2_cons_Index + harm_foundation +  fairness_foundation + authority_foundation + ingroup_foundation + purity_foundation + Norms_index + Stress_index + Impacts_index + SDRS_Sum_scaled, data = omit_df)
+ 
+summary(MegaModel10)
+
+outlierTest(MegaModel10)
+
+#with 3 political orientation, dummy coded variables 
+
+MegaModel11 <- lm(logMeanK ~ logCOVID_DoG_index + GCS_index + libertarian_dummy + conservative_dummy + none_dummy + harm_foundation +  fairness_foundation + authority_foundation + ingroup_foundation + purity_foundation + Norms_index + Stress_index + Impacts_index + SDRS_Sum_scaled, data = omit_df)
+
+summary(MegaModel11)
+
+outlierTest(MegaModel11)
+
+#with 3 political orientation, non dummy coded variables, and SECS
+
+
+MegaModel12 <- lm(logMeanK ~ logCOVID_DoG_index + GCS_index +  Measure2_liberterian_Index + Measure2_liberal_Index + Measure2_cons_Index + Measure5_Social_Index + Measure5_Political_Index + harm_foundation +  fairness_foundation + authority_foundation + ingroup_foundation + purity_foundation + Norms_index + Stress_index + Impacts_index + SDRS_Sum_scaled, data = omit_df)
+
+summary(MegaModel12)
+
+outlierTest(MegaModel12)
+
+vif(MegaModel12)
+
+
+```
+
 
 ### Norms and Political Orientation (Diaz 2020): Conservatives will report norms that favor immediate gratification.
 
@@ -1325,6 +1863,140 @@ summary(AgeModel2)
 
 plot(AgeModel2)
 ```
+
+#creating a matrix
+```{r}
+
+omit_df_viz <- omit_df[c(7,9,13,17, 19:21, 25:30, 36, 40)]
+
+omit_df_viz<- rename(omit_df_viz, MCQ = logMeanK,
+                     DoG = logCOVID_DoG_index,
+                     Norms = Norms_index,
+                     Uncert = GCS_index,
+                     Libe = Measure2_liberal_Index,
+                     Cons = Measure2_cons_Index,
+                   Libert = Measure2_liberterian_Index,
+                   Harm = harm_foundation,
+                   Fair = fairness_foundation,
+                   Loyal = ingroup_foundation,
+                   Auth = authority_foundation,
+                   pur = purity_foundation,
+                  Stres= Stress_index,
+                   Impac = Impacts_index,
+                   Soc = SDRS_Sum_scaled)
+
+ggpairs(omit_df_viz,
+      title  = "Correlation matrix of variables",
+      )
+
+#this does not work
+
+#lets break it down a bit brah
+
+omit_df_viz_part1 <- omit_df[c(7,9,13,17, 30, 36, 40)]
+
+omit_df_viz_part1<- rename(omit_df_viz_part1, MCQ = logMeanK,
+                     DoG = logCOVID_DoG_index,
+                     Norms = Norms_index,
+                     Uncert = GCS_index,
+               Stress= Stress_index,
+                  Impact = Impacts_index,
+                  SocialDis = SDRS_Sum_scaled)
+
+
+
+ggpairs(omit_df_viz_part1,
+      title  = "Correlation matrix of variables",
+      )
+
+
+omit_df_viz_part2 <- omit_df[c(19:21, 30, 36, 40)]
+
+omit_df_viz_part2 <- rename(omit_df_viz_part2, 
+                          Lib = Measure2_liberal_Index,
+                     Cons = Measure2_cons_Index,
+                   libert = Measure2_liberterian_Index,
+                     Stress= Stress_index,
+                  Impact = Impacts_index,
+                  SocialDis = SDRS_Sum_scaled)
+                   
+            
+                
+
+ggpairs(omit_df_viz_part2,
+      title  = "Correlation matrix of variables",
+      )
+
+
+#what about this?
+
+omit_df_viz.cor = rcorr(as.matrix(omit_df_viz))
+omit_df_viz.cor
+
+omit_df_viz.corR = omit_df_viz.cor$P
+
+omit_df_viz.corR 
+
+
+```
+
+#lets try something else 
+```{r}
+
+# from https://towardsdatascience.com/how-to-create-a-correlation-matrix-with-too-many-variables-309cc0c0a57
+
+omit_df_viz <- omit_df[c(7,9,13,17, 25:29, 40,30, 36, 19:21)]
+
+omit_df_viz<- rename(omit_df_viz, "Temporal Discounting" = logMeanK,
+                     "COVID-19 DoG" = logCOVID_DoG_index,
+                     "COVID-19 Social Norms" = Norms_index,
+                     Uncertainty = GCS_index,
+                     "Liberal Orientation " = Measure2_liberal_Index,
+                     "Conservative Orientation" = Measure2_cons_Index,
+                   "Libertarian Orientation" = Measure2_liberterian_Index,
+                   "Harm Foundation" = harm_foundation,
+                   "Faireness Foundation" = fairness_foundation,
+                   "Loyalty Foundation" = ingroup_foundation,
+                   "Authority Foundation" = authority_foundation,
+                   "Sanctity Foundation" = purity_foundation,
+                   "COVID-19 Stress" = Stress_index,
+                   "COVID-19 Impact" = Impacts_index,
+                   "Social Desirability" = SDRS_Sum_scaled)
+
+library(corrplot)
+
+corr_simple <- function(data=omit_df_viz,sig=0.01){
+  #convert data to numeric in order to run correlations
+  #convert to factor first to keep the integrity of the data - each value will become a number rather than turn into NA
+  df_cor <- data %>% mutate_if(is.character, as.factor)
+  df_cor <- df_cor %>% mutate_if(is.factor, as.numeric)
+  #run a correlation and drop the insignificant ones
+  corr <- cor(df_cor)
+  #prepare to drop duplicates and correlations of 1     
+  corr[lower.tri(corr,diag=TRUE)] <- NA 
+  #drop perfect correlations
+  corr[corr == 1] <- NA 
+  #turn into a 3-column table
+  corr <- as.data.frame(as.table(corr))
+  #remove the NA values from above 
+  corr <- na.omit(corr) 
+  #select significant values  
+  corr <- subset(corr, abs(Freq) > sig) 
+  #sort by highest correlation
+  corr <- corr[order(-abs(corr$Freq)),] 
+  #print table
+  print(corr)
+  #turn corr back into matrix in order to plot with corrplot
+  mtx_corr <- reshape2::acast(corr, Var1~Var2, value.var="Freq")
+  
+  #plot correlations visually
+  corrplot(mtx_corr, is.corr=FALSE, tl.col="black", na.label=" ")
+}
+corr_simple()
+
+```
+
+
 
 # MISC SECTION 
 
