@@ -11,17 +11,17 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 # Packages
-library("ggpubr")
-library(psych)
+#install.packages("tidyverse")
 library(tidyverse)
-library(ggplot2)
+
+#install.packages("scales")
 library(scales)
-library(jtools)
-library(Hmisc)
-library(dplyr)
+
+#install.packages("psych")
+library(psych)
 ```
 
-# Processing. Codebook can be found here: https://docs.google.com/document/d/1P3mAw_hSos0rTQp9I4ItetfMY8JgSN9atARJWKJZeog/edit?usp=sharing
+# Processing
 
 ## Load and Cleanup Data
 
@@ -31,11 +31,13 @@ df <- read.csv("3C_Live_Study_Data.csv", header=T, na.strings="")
 #444 total rows, 442 total participants 
 
 ## Drop unneeded rows (pilot data, incomplete trials, remove entries that are shorter than 6 mins longer than 45 minutes) & cols
-unneeded_cols <- c("StartDate", "EndDate", "Status", "IPAddress", "Progress", "Finished", "RecordedDate", "ResponseId", "RecipientLastName", "RecipientFirstName", "RecipientEmail", "ExternalReference", "LocationLatitude", "LocationLongitude", "DistributionChannel", "UserLanguage", "Gender_4_TEXT...Parent.Topics", "Gender_4_TEXT...Sentiment.Polarity", "Gender_4_TEXT...Sentiment.Score", "Gender_4_TEXT...Sentiment", "Gender_4_TEXT...Topics", "Gender_4_TEXT...Topic.Sentiment.Label", "Gender_4_TEXT...Topic.Sentiment.Score")
+unneeded_cols <- c("X", "StartDate", "EndDate", "Status", "Progress", "Finished", "RecordedDate", "ResponseId", "RecipientLastName", "RecipientFirstName", "RecipientEmail", "ExternalReference", "DistributionChannel", "UserLanguage", "Gender_4_TEXT...Parent.Topics", "Gender_4_TEXT...Sentiment.Polarity", "Gender_4_TEXT...Sentiment.Score", "Gender_4_TEXT...Sentiment", "Gender_4_TEXT...Topics", "Gender_4_TEXT...Topic.Sentiment.Label", "Gender_4_TEXT...Topic.Sentiment.Score")
 
 # Return entries where duration was longer than 45 min.
 df$'Duration..in.seconds.' = as.numeric(as.character(df$'Duration..in.seconds.'))
-df[which(df$'Duration..in.seconds.' >= 45*60), ]  # 4 entries, 394, 410, 415, and 444. 410 = 31 seconds over limit, so not going to exclude. 
+df[which(df$'Duration..in.seconds.' >= 45*60), ]  
+
+# 4 entries, 394, 410, 415, and 444. 410 = 31 seconds over limit, so not going to exclude. 
 
 # return entries where duration was shorter than 6 mins.
 df$'Duration..in.seconds.' = as.numeric(as.character(df$'Duration..in.seconds.'))
@@ -44,20 +46,20 @@ df[which(df$'Duration..in.seconds.' <= 360), ]   # 29 entries, 8,9,10, 11, 12, 1
 # remove Gender and Race open response columns to be able to remove rows with missing values
 NAcols <- c("Gender_4_TEXT", "Race_6_TEXT")
 
+df <- df[ , !names(df) %in% unneeded_cols]
+df <- df[ , !names(df) %in% NAcols]
+
+
+
 # Exclude folks who took longer than 45 mins or were shorter than 6 mins and un-needed columns
 
 #exclude remaining folks progress less than 100 percent 
-
 df[which(df$Progress < 100), ]
 
 # Remove all the folks who meet the criteria stated above 
-
 #df <- df[-c(1,2,8:12,14,22,23,118,176,191,205,222,255,243,252,270,323,324,331,350,364,392,394,415:444,423,424,426,426,429,432:434,436,439,443,444), ]
-
 df <- df[-c(1,2,8:12,14,22,205,222,255,324,394,415:421,422,423,424,425,426,429,432:434,436,439,443,444), ]
 
-df <- df[ , !names(df) %in% unneeded_cols]
-df <- df[ , !names(df) %in% NAcols]
 
 #410 participants are now left out of the original 442
 
@@ -165,7 +167,7 @@ omit_df
 
 ```
 
-## COVID DoG and Pandemic Expextation Processing 
+## COVID DoG and Pandemic Expextation Processing (not using pandemic expextation variable in final dataset) 
 
 ```{r}
 # make index of delaying across all 6 questions (average delaying across categories)
@@ -186,7 +188,7 @@ omit_df <- omit_df %>% mutate(traveling_index = rowMeans(mini_df),
 
 ```
 
-## automatic outlier work 
+## automatic outlier work, just to see what our dataset is looking like 
 
 ```{r}
 #What does the COVID DoG distribution look like?
@@ -222,7 +224,7 @@ no_outliers <- subset(omit_df, omit_df$COVID_DoG_index > (Q1 - 1.5*IQR) & omit_d
 
 ```
 
-## Normalize COVID DoG and Pandemic Length Expextation Data 
+## Normalize COVID DoG and Pandemic Length Expextation Data (again not using pandemic expextation)
 
 ```{r}
 
@@ -403,9 +405,9 @@ omit_df <- omit_df %>%
 
 #what are the cons scores looking like?
 
-histogram(omit_df$SmlCons)
-histogram(omit_df$MedCons)
-histogram(omit_df$LrgCons)
+hist(omit_df$SmlCons)
+hist(omit_df$MedCons)
+hist(omit_df$LrgCons)
 
 #Let's remove any of the values that are below .80 cons score across the values
 
@@ -417,9 +419,6 @@ omit_df[omit_df$LrgCons < .8,]
 #new low cons scores == 11, 16, 23, 68, 71 86, 108, 178, 249 250
 
 omit_df <- omit_df[!(omit_df$id=="11" | omit_df$id=="68"| omit_df$id=="86" | omit_df$id=="108" | omit_df$id=="250" | omit_df$id=="16" | omit_df$id=="23" | omit_df$id=="71" | omit_df$id=="178" | omit_df$id=="249"),]
-
-
-
 
 ```
 
@@ -463,7 +462,6 @@ hist(omit_df$logMeanK)
 omit_df <- omit_df%>%
   add_column(logSmlK = MCQdata$logSmlK,
              .after = "MCQ_27") 
-
 
 omit_df <- omit_df%>%
   add_column(logMedK = MCQdata$logMedK,
@@ -524,7 +522,7 @@ omit_df <- omit_df %>% mutate(StrangerNorm_index = rowMeans(mini_df),
 
 ```
 
-### General Confidence (sum score)
+### General Confidence, reversed scored to be uncertainty measure (sum score)
 
 ```{r}
 
@@ -552,7 +550,7 @@ omit_df <- omit_df %>% mutate(GCS_index = rowMeans(mini_df),
 
 ```
 
-### Intolerance of Uncertainty (sum score, 3 indices)
+### Intolerance of Uncertainty (sum score, 3 indices, not using in final dataset)
 
 ```{r}
 mini_df <- omit_df %>% select(IUS_1:IUS_12)
@@ -582,29 +580,29 @@ mini_df <- omit_df %>% select(Measure2_4)
 omit_df <- omit_df %>% mutate(Measure2_liberterian_Index = rowMeans(mini_df), 
                               .before = Measure5_1)
 
-# measure 5 indices
+# measure 5 indices (inactive for final dataset)
 
 #re-coding reverse coded variables
-mini_df <- omit_df %>% select(Measure5_1, Measure5_7)
-omit_df <- omit_df %>% mutate(Measure5_1 = 100 - Measure5_1)
-omit_df <- omit_df %>% mutate(Measure5_7 = 100 - Measure5_7)
+#mini_df <- omit_df %>% select(Measure5_1, Measure5_7)
+#omit_df <- omit_df %>% mutate(Measure5_1 = 100 - Measure5_1)
+#omit_df <- omit_df %>% mutate(Measure5_7 = 100 - Measure5_7)
 
 #indice across both scales
 
-mini_df <- omit_df %>% select(Measure5_1:Measure5_14)
-omit_df <- omit_df %>% mutate(Measure5_SECS_Index = rowMeans(mini_df), 
-                              .before = logCOVID_DoG_index)
+#mini_df <- omit_df %>% select(Measure5_1:Measure5_14)
+#omit_df <- omit_df %>% mutate(Measure5_SECS_Index = rowMeans(mini_df), 
+                            #  .before = logCOVID_DoG_index)
 #social indice
 
-mini_df <- omit_df %>% select(Measure5_1,Measure5_5, Measure5_6, Measure5_9, Measure5_10, Measure5_13, Measure5_14)
-omit_df <- omit_df %>% mutate(Measure5_Social_Index = rowMeans(mini_df), 
-                              .before = logCOVID_DoG_index)
+#mini_df <- omit_df %>% select(Measure5_1,Measure5_5, Measure5_6, Measure5_9, Measure5_10, Measure5_13, Measure5_14)
+#omit_df <- omit_df %>% mutate(Measure5_Social_Index = rowMeans(mini_df), 
+                             # .before = logCOVID_DoG_index)
 
 #political indice
 
-mini_df <- omit_df %>% select(Measure5_4, Measure5_7, Measure5_8, Measure5_11, Measure5_12)
-omit_df <- omit_df %>% mutate(Measure5_Political_Index = rowMeans(mini_df), 
-                              .before = logCOVID_DoG_index)
+#mini_df <- omit_df %>% select(Measure5_4, Measure5_7, Measure5_8, Measure5_11, Measure5_12)
+#omit_df <- omit_df %>% mutate(Measure5_Political_Index = rowMeans(mini_df), 
+                          #    .before = logCOVID_DoG_index)
 
 ```
 
@@ -698,7 +696,7 @@ omit_df <- omit_df %>% mutate(News_index = rowMeans(News_Experiences),
                               .before = Age)
 ```
 
-### Disgust (Mean Index across three sub indice)
+### Disgust (Mean Index across three sub indice, not using in final dataset)
 ```{r}
 #Pathogen Indice 
 
@@ -725,20 +723,172 @@ mini_df <- omit_df %>% select(SDRS.5_Q1:SDRS.5_Q5)
 omit_df <- omit_df %>% mutate(SDRS_Sum = rowSums(mini_df), 
                               .before = Worries_1)
 SDRS_Sum_scaled <- rescale(omit_df$SDRS_Sum, from = c(5, 25), to = c(20, 100))
+
 omit_df <- omit_df %>% mutate(SDRS_Sum_scaled, 
                               .before = SDRS_Sum)
 
 ```
 
+# Indice reliabilities
+
+#COVID DoG 
+
+```{r}
+
+#create CDOG Subset for total score
+
+CDOGTotal <- select(omit_df, 58:63 )
+
+psych::alpha(CDOGTotal)
+
+#create CDoG subset for social score
+
+CDoGSocial <- select(omit_df, 58:60 ) 
+
+psych::alpha(CDoGSocial)
+
+
+#create CDoG subset for Travel score
+
+CDoGTravel <- select(omit_df, 61:63 )
+
+psych::alpha(CDoGTravel)
+
+
+```
+
+
+#MCQ
+
+```{r}
+#create MCQ cons Subset 
+
+mini_df <- omit_df %>% select(LrgCons:SmlCons)
+omit_df <- omit_df %>% mutate(Mean_Cons = rowMeans(mini_df),
+                              .before = LrgICR)
+mean(omit_df$Mean_Cons)
+sd(omit_df$Mean_Cons)
+
+```
+
+## Norms
+```{r}
+#create Norms Subset 
+
+Norm_DF <- select(omit_df,68:76 )
+
+psych::alpha(Norm_DF)
+
+```
+
+## SD (need to add in reverse code )
+```{r}
+#create SD Subset 
+
+SD_DF <- select(omit_df,177:181)
+
+psych::alpha(SD_DF, keys = c(1, -1, -1, -1, 1))
+
+```
+
+## Uncertainty (need to add in reverse code)
+
+```{r}
+#create Uncertainty Subset 
+
+Uncertainty_DF <- select(omit_df, 93:95, 97:99 )
+
+psych::alpha(Uncertainty_DF, keys = c(1, 1, 1, 1, -1, 1))
+
+```
+
+## MFT
+
+### Care
+
+```{r}
+#create Care Subset 
+
+Care_DF <- select(omit_df, 116, 122, 127, 132, 138, 143)
+
+psych::alpha(Care_DF)
+
+```
+
+### Fairness
+
+```{r}
+#create fairness Subset 
+
+Fairness_DF <- select(omit_df,117, 123, 128, 133, 139, 144)
+
+psych::alpha(Fairness_DF)
+
+```
+
+### Loyalty
+```{r}
+#create Loyalty Subset 
+
+Loyalty_DF <- select(omit_df, 118, 124, 129, 134, 140, 145)
+
+psych::alpha(Loyalty_DF)
+
+```
+
+### Authority 
+
+```{r}
+#create authority Subset 
+
+Authority_DF <- select(omit_df,119, 125, 130, 135, 141, 146)
+
+psych::alpha(Authority_DF)
+
+```
+
+### Purity
+
+```{r}
+#create purity Subset 
+
+Purity_DF <- select(omit_df, 120, 126, 131, 136, 142, 147)
+
+psych::alpha(Purity_DF)
+
+```
+
+
+## Stress
+```{r}
+#create Stress Subset 
+
+Stress_DF <- select(omit_df, 184:219)
+
+psych::alpha(Stress_DF)
+
+```
+
+## Impact (need to add in reverse code)
+```{r}
+#create impact Subset 
+
+Impact_DF <- select(omit_df, 226:234)
+
+psych::alpha(Impact_DF, keys = c(1, 1, -1, 1, 1, -1, 1, 1, -1))
+
+```
+
+
 # Create final data set for analysis
 ```{r}
 omit_df <- omit_df %>%
-  select("id","SmlK","MedK", "LrgK", "MeanK", "logMeanK", "COVID_DoG_index", "logCOVID_DoG_index", "traveling_index", "socialgatherings_index" ,"logPandemicLengthExpect.1",  "Norms_index","FamilyNorm_index", "FriendsNorm_index" ,"StrangerNorm_index", "GCS_index", "IUS_Sum", "Measure2_liberal_Index", "Measure2_cons_Index", "Measure2_liberterian_Index", "Measure5_SECS_Index", "Measure5_Social_Index", "Measure5_Political_Index", "harm_foundation", "fairness_foundation", "ingroup_foundation", "authority_foundation", "purity_foundation",  "Stress_index", "COVIDDanger_ContFears_index", "COVID_econ_fears_index", "COVID_xenophobia", "COVID_checking", "COVID_traumatic_stress", "Impacts_index", "Pathogen_Disgust_index", "Sexual_Disgust_index", "Moral_Disgust_index", "SDRS_Sum_scaled", "Duration..in.seconds.", "Age", "Gender", "Race", "Education", "Occupation", "Nationality", "Ethnicity", "MaritalStatus")   #keep only the variables of interest
+  select("id","SmlK","MedK", "LrgK", "MeanK", "logMeanK", "COVID_DoG_index", "logCOVID_DoG_index", "traveling_index", "socialgatherings_index" ,  "Norms_index","FamilyNorm_index", "FriendsNorm_index" ,"StrangerNorm_index", "GCS_index", "IUS_Sum", "Measure2_liberal_Index", "Measure2_cons_Index", "Measure2_liberterian_Index", "harm_foundation", "fairness_foundation", "ingroup_foundation", "authority_foundation", "purity_foundation",  "Stress_index", "COVIDDanger_ContFears_index", "COVID_econ_fears_index", "COVID_xenophobia", "COVID_checking", "COVID_traumatic_stress", "Impacts_index", "SDRS_Sum_scaled", "Duration..in.seconds.", "Age", "Gender", "Race", "Education", "Occupation", "Nationality", "Ethnicity", "MaritalStatus")   #keep only the variables of interest
 
 #Code for writing the dataframe to a csv file
 
 #write.csv(Your DataFrame,"Path to export the DataFrame\\File Name.csv", row.names = FALSE)
 
 write.csv(omit_df,"omit_df.csv", row.names = TRUE)
-
 ```
+
